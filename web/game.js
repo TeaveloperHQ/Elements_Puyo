@@ -63,7 +63,7 @@ function computeFormula(cellEls) {
   }).join("");
 }
 
-// HTML 라벨: sup 태그 사용 (폰트에 따라 유니코드 위첨자가 없어도 표시됨).
+// HTML 라벨: sup 태그 사용 (심볼 우상단에 확실히 뜨도록 CSS 에서 위쪽으로 이동).
 function labelHTML(e) {
   if (e.charge === 0) return e.symbol;
   const abs = Math.abs(e.charge);
@@ -108,7 +108,13 @@ class Ball {
     if (this.element.category === CATEGORY.METAL) el.classList.add("metal");
     if (isNoble(this.element)) {
       el.classList.add("noble");
-      el.innerHTML = `<span class="label">${this.element.symbol}</span>`;
+      // 기체 파티클 레이어 + 라벨
+      el.innerHTML = `
+        <div class="gas-layer"></div>
+        <div class="gas-particles">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <span class="label">${this.element.symbol}</span>`;
     } else {
       el.innerHTML = labelHTML(this.element);
     }
@@ -529,53 +535,38 @@ const FALL_SPEED_MAX = 6.0;      // 상한
 const FALL_SPEED_SOFT = 30;      // soft drop 고정
 const SCORE_PER_LEVEL = 400;     // 이 점수마다 레벨업
 
-// 연금술사 랭크 — 실제 화학자 이름 + 얼굴 + 상세 설명 (교사/학생용)
+// 연금술사 랭크 — 영어 이름(주) + 한글(부제) + 대표 업적 상징 엠블럼(portraits.js)
 const ALCHEMIST_RANKS = [
-  { name: "조시모스", era: "3–4세기 이집트",
-    desc: "그리스-이집트 연금술사. 현존하는 가장 오래된 연금술 저서를 남김. 증류기(alembic) 등 실험기구 사용을 체계화. 물질의 변환·정제 개념의 시조.",
-    initial: "조", face: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/Distillation_equipment_of_Zosimus.jpg/240px-Distillation_equipment_of_Zosimus.jpg" },
-  { name: "자비르 이븐 하이얀", era: "8세기 페르시아",
-    desc: "\"화학의 아버지\"로 불림. 왕수(질산+염산), 아쿠아 레지아 등 강산 발견. 실험 방법·기록·재현 개념을 세워 연금술을 과학으로 진화시킴.",
-    initial: "자", face: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Jabir_ibn_Hayyan.jpg/240px-Jabir_ibn_Hayyan.jpg" },
-  { name: "파라켈수스", era: "16세기 스위스",
-    desc: "의화학(iatrochemistry) 창시자. 광물성 약제를 의학에 도입. \"용량이 독을 만든다\" — 최초의 독성학 개념. 인체를 화학적 시스템으로 봄.",
-    initial: "파", face: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Paracelsus01.jpg/240px-Paracelsus01.jpg" },
-  { name: "로버트 보일", era: "17세기 아일랜드",
-    desc: "저서 《회의적 화학자》. 원소·화합물·혼합물을 근대적 의미로 정의. **보일의 법칙**(기체 부피∝1/압력) 발견. 연금술을 과학적 화학으로 전환.",
-    initial: "보", face: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/The_Shannon_Portrait_of_the_Hon_Robert_Boyle.jpg/240px-The_Shannon_Portrait_of_the_Hon_Robert_Boyle.jpg" },
-  { name: "앙투안 라부아지에", era: "18세기 프랑스",
-    desc: "\"근대 화학의 아버지\". **질량 보존 법칙** 확립. 산소·수소를 명명하고 연소가 산소와의 결합임을 증명(플로지스톤설 폐기). 첫 원소 목록 작성.",
-    initial: "라", face: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Antoine_lavoisier_color.jpg/240px-Antoine_lavoisier_color.jpg" },
-  { name: "존 돌턴", era: "19세기 초 영국",
-    desc: "근대 **원자설** 창시. 각 원소는 고유 질량의 원자로 이루어지며, 화합물은 정수비의 원자 결합. 색맹의 최초 과학적 기록도 남김(색맹=돌턴증).",
-    initial: "돌", face: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/John_Dalton_by_Charles_Turner.jpg/240px-John_Dalton_by_Charles_Turner.jpg" },
-  { name: "아메데오 아보가드로", era: "19세기 초 이탈리아",
-    desc: "**아보가드로의 법칙**: 같은 온도·압력의 모든 기체는 같은 부피 안에 같은 수의 입자를 포함. 원자와 분자를 구분하는 개념 정립.",
-    initial: "아", face: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/Amedeo_Avogadro2.png/240px-Amedeo_Avogadro2.png" },
-  { name: "드미트리 멘델레예프", era: "19세기 후 러시아",
-    desc: "**주기율표**(1869) 최초 정립. 원소를 원자량 순으로 배열, 주기적 성질 규칙 발견. 갈륨·게르마늄 등 미발견 원소의 성질을 미리 예측해 정확히 맞춤.",
-    initial: "멘", face: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/DIMendeleevCab.jpg/240px-DIMendeleevCab.jpg" },
-  { name: "마리 퀴리", era: "19–20세기 폴란드·프랑스",
-    desc: "폴로늄·라듐 발견. 방사성(radioactivity) 개념 최초 사용. 여성 최초 노벨상, 물리학상(1903)과 화학상(1911) 모두 수상한 유일한 인물.",
-    initial: "퀴", face: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Marie_Curie_c._1920s.jpg/240px-Marie_Curie_c._1920s.jpg" },
-  { name: "어니스트 러더퍼드", era: "20세기 초 뉴질랜드·영국",
-    desc: "**금박 산란 실험**으로 원자 중심의 조밀한 핵을 발견. \"핵물리학의 아버지\". 알파·베타선 명명, 방사성 붕괴 이론. 노벨화학상(1908).",
-    initial: "러", face: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Ernest_Rutherford_%28Nobel%29.jpg/240px-Ernest_Rutherford_%28Nobel%29.jpg" },
-  { name: "닐스 보어", era: "20세기 초 덴마크",
-    desc: "**보어 원자모형**: 전자가 특정 에너지 궤도에만 존재하며, 궤도 사이 이동 시 빛(광자)을 방출·흡수. 양자역학 초기 기틀 마련. 노벨물리학상(1922).",
-    initial: "보", face: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Niels_Bohr.jpg/240px-Niels_Bohr.jpg" },
-  { name: "라이너스 폴링", era: "20세기 미국",
-    desc: "**전기음성도** 개념 도입, 화학결합의 양자역학적 이해 확립. 단백질 α-헬릭스 구조 규명. 노벨화학상(1954)·평화상(1962) 모두 수상.",
-    initial: "폴", face: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Linus_Pauling_1962.jpg/240px-Linus_Pauling_1962.jpg" },
+  { name: "Zosimos",           nameKr: "조시모스",           era: "3–4c Egypt",
+    desc: "그리스-이집트 연금술사. 현존하는 가장 오래된 연금술 저서를 남김. 증류기(alembic) 등 실험기구 사용을 체계화. 물질의 변환·정제 개념의 시조." },
+  { name: "Jabir ibn Hayyan",  nameKr: "자비르 이븐 하이얀", era: "8c Persia",
+    desc: "\"화학의 아버지\". 왕수(질산+염산) 발견. 실험 방법·기록·재현 개념을 세워 연금술을 과학으로 진화시킴." },
+  { name: "Paracelsus",        nameKr: "파라켈수스",         era: "16c Switzerland",
+    desc: "의화학(iatrochemistry) 창시자. 광물성 약제를 의학에 도입. \"용량이 독을 만든다\" — 최초의 독성학 개념." },
+  { name: "Robert Boyle",      nameKr: "로버트 보일",        era: "17c Ireland",
+    desc: "《회의적 화학자》. 원소·화합물·혼합물을 근대적 의미로 정의. **보일의 법칙**(P∝1/V) 발견." },
+  { name: "Antoine Lavoisier", nameKr: "앙투안 라부아지에",  era: "18c France",
+    desc: "\"근대 화학의 아버지\". **질량 보존 법칙** 확립. 산소·수소 명명, 연소=산소 결합 증명(플로지스톤설 폐기)." },
+  { name: "John Dalton",       nameKr: "존 돌턴",            era: "Early 19c Britain",
+    desc: "근대 **원자설** 창시. 각 원소는 고유 질량의 원자로 이루어지며, 화합물은 정수비의 원자 결합." },
+  { name: "Amedeo Avogadro",   nameKr: "아메데오 아보가드로",era: "Early 19c Italy",
+    desc: "**아보가드로의 법칙**: 같은 온도·압력의 모든 기체는 같은 부피 안에 같은 수의 입자. 원자·분자 구분 정립." },
+  { name: "Dmitri Mendeleev",  nameKr: "드미트리 멘델레예프",era: "Late 19c Russia",
+    desc: "**주기율표**(1869) 최초 정립. 갈륨·게르마늄 등 미발견 원소의 성질을 미리 예측해 정확히 맞춤." },
+  { name: "Marie Curie",       nameKr: "마리 퀴리",          era: "19–20c Poland·France",
+    desc: "폴로늄·라듐 발견. 방사성(radioactivity) 개념 최초 사용. 여성 최초 노벨상(물리 1903·화학 1911)." },
+  { name: "Ernest Rutherford", nameKr: "어니스트 러더퍼드",  era: "Early 20c NZ·UK",
+    desc: "**금박 산란 실험**으로 원자핵 발견. \"핵물리학의 아버지\". 알파·베타선 명명. 노벨화학상(1908)." },
+  { name: "Niels Bohr",        nameKr: "닐스 보어",          era: "Early 20c Denmark",
+    desc: "**보어 원자모형**: 전자가 특정 에너지 궤도에만 존재. 궤도 이동 시 광자 방출·흡수. 노벨물리학상(1922)." },
+  { name: "Linus Pauling",     nameKr: "라이너스 폴링",      era: "20c USA",
+    desc: "**전기음성도** 도입, 화학결합의 양자역학적 이해. α-헬릭스 규명. 노벨화학상(1954)·평화상(1962)." },
 ];
 
-// 화학자 초상 HTML (이미지 로드 실패 시 이니셜로 폴백)
-function chemistPortraitHtml(rank, size = 40) {
-  return `<div class="chemist-portrait" style="width:${size}px;height:${size}px">
-    <img src="${rank.face}" alt="${rank.name}"
-         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
-    <div class="portrait-fallback" style="display:none">${rank.initial}</div>
-  </div>`;
+// 화학자 삽화 HTML (로컬 SVG 엠블럼 — 항상 렌더링됨)
+function chemistPortraitHtml(rankIndex, size = 40) {
+  const svgMarkup = emblemSvg(rankIndex);
+  return `<div class="chemist-portrait" style="width:${size}px;height:${size}px">${svgMarkup}</div>`;
 }
 
 function currentLevel() { return 1 + Math.floor(state.score / SCORE_PER_LEVEL); }
@@ -649,6 +640,7 @@ function updateFalling(dt) {
 
 async function onPieceLanded() {
   state.isResolving = true;
+  audio.playLand();
   await sleep(80);
   await resolveMatches();
   advanceToNextPiece();
@@ -685,6 +677,14 @@ async function resolveMatches() {
     if (chain > stats.maxChain) stats.maxChain = chain;
 
     showRuleBanner(chain, fired, simul);
+    // 규칙별 SFX (가장 특이한 규칙 하나만 재생 — 매치 화면과 동일 우선순위)
+    const primary = met.size > 0 ? "metal"
+                  : dia.size > 0 ? "diatomic"
+                  : grp.size > 0 ? "group"
+                  : per.size > 0 ? "period"
+                  : "molecule";
+    audio.playClear(primary, chain);
+    if (chain >= 2) audio.playChain(chain);
     saveStats();
     renderStats();
 
@@ -751,6 +751,7 @@ async function resolveMatches() {
     if (newLv > state.level) {
       state.level = newLv;
       showLevelUp(newLv);
+      audio.switchBgm(newLv);
     }
     updateSideUI();
   }
@@ -867,6 +868,8 @@ function advanceToNextPiece() {
     saveStats();
     renderStats();
     showOverlay("게임 오버");
+    audio.playGameOver();
+    audio.stopBgm();
     return;
   }
   spawnPiece();
@@ -878,11 +881,16 @@ function advanceToNextPiece() {
 // 입력
 // ══════════════════════════════════════════════════════════════════════
 document.addEventListener("keydown", (e) => {
+  // 첫 유저 입력에서 AudioContext 깨우기 (브라우저 자동재생 정책)
+  audio.unlock();
   if (e.key === "ArrowLeft")  { tryMove(-1); e.preventDefault(); return; }
   if (e.key === "ArrowRight") { tryMove(+1); e.preventDefault(); return; }
   if (e.key === "ArrowDown")  { state.softDrop = true; e.preventDefault(); return; }
   if (e.key === "n" || e.key === "N") { newGame(); e.preventDefault(); return; }
+  if (e.key === "m" || e.key === "M") { const on = !audio.toggleMuteAll(); updateMuteUI(); e.preventDefault(); return; }
+  if (e.key === "b" || e.key === "B") { audio.toggleMuteBgm(); updateMuteUI(); e.preventDefault(); return; }
 });
+document.addEventListener("click", () => audio.unlock(), { once: false });
 document.addEventListener("keyup", (e) => {
   if (e.key === "ArrowDown") state.softDrop = false;
 });
@@ -898,6 +906,7 @@ function tryMove(delta) {
   if (columnHeight(field, newX) > Math.floor(ball.y)) return;
   ball.gridX = newX;
   ball.updateDom();
+  audio.playMove();
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -913,17 +922,35 @@ const rankTitleEl = document.getElementById("rank-title");
 const overlayEl = document.getElementById("overlay");
 const overlayTitleEl = document.getElementById("overlay-title");
 
+// 대전 UI 요소 (상대 카드 · 스테이지 뱃지)
+const oppNameEl = document.getElementById("opp-name");
+const oppNameBigEl = document.getElementById("opp-name-big");
+const oppNameKrEl = document.getElementById("opp-name-kr");
+const oppPortraitEl = document.getElementById("opp-portrait");
+const stageNumEl = document.getElementById("stage-num");
+
+function updateOpponentCard(rIdx, rank) {
+  if (oppNameEl) oppNameEl.textContent = rank.name;
+  if (oppNameBigEl) oppNameBigEl.textContent = rank.name;
+  if (oppNameKrEl) oppNameKrEl.textContent = rank.nameKr;
+  if (oppPortraitEl) oppPortraitEl.innerHTML = chemistPortraitHtml(rIdx, 110);
+  if (stageNumEl) stageNumEl.textContent = (rIdx + 1);
+}
+
 function updateSideUI() {
   scoreEl.textContent = state.score;
   chainEl.textContent = state.lastChain;
-  levelEl.textContent = state.level;
-  const r = rankInfo(state.level);
+  levelEl.textContent = "RANK " + state.level;
+  const rIdx = Math.min(state.level - 1, ALCHEMIST_RANKS.length - 1);
+  const r = ALCHEMIST_RANKS[rIdx];
   rankTitleEl.innerHTML = `
-    ${chemistPortraitHtml(r, 38)}
+    ${chemistPortraitHtml(rIdx, 42)}
     <div class="rank-text">
       <div class="rank-name">${r.name}</div>
+      <div class="rank-name-kr">${r.nameKr}</div>
       <div class="rank-era">${r.era}</div>
     </div>`;
+  updateOpponentCard(rIdx, r);
   const progress = (state.score % SCORE_PER_LEVEL) / SCORE_PER_LEVEL;
   levelBarEl.style.width = (progress * 100) + "%";
   nextEl.innerHTML = "";
@@ -998,19 +1025,22 @@ function showScorePopup(amount, positions, isBig) {
   setTimeout(() => el.remove(), 950);
 }
 
-// 레벨업 알림 — 연금술 승급 (실제 화학자 얼굴 포함)
+// 레벨업 알림 — 승급 시 화학자 삽화 + 영어명·한글명·업적
 function showLevelUp(newLevel) {
-  const rank = rankInfo(newLevel);
+  const rIdx = Math.min(newLevel - 1, ALCHEMIST_RANKS.length - 1);
+  const rank = ALCHEMIST_RANKS[rIdx];
   const el = document.createElement("div");
   el.className = "level-up-toast";
   el.innerHTML = `
     <div class="lvl-sigil">⚗</div>
-    ${chemistPortraitHtml(rank, 100)}
+    ${chemistPortraitHtml(rIdx, 110)}
     <div class="lvl-badge">RANK ${newLevel} · ${rank.era}</div>
     <div class="lvl-name">${rank.name}</div>
+    <div class="lvl-name-kr">${rank.nameKr}</div>
     <div class="lvl-desc">${rank.desc}</div>
   `;
   document.body.appendChild(el);
+  audio.playLevelUp();
   setTimeout(() => el.remove(), 2600);
 }
 
@@ -1131,9 +1161,56 @@ function newGame() {
   spawnPiece();
   updateSideUI();
   lastTime = performance.now();
+  audio.playNewGame();
+  audio.switchBgm(1);
 }
+
+function updateMuteUI() {
+  const el = document.getElementById("mute-toggle");
+  if (!el) return;
+  const allMuted = audio.isMuted();
+  const bgmMuted = audio.isBgmMuted();
+  el.dataset.state = allMuted ? "all" : bgmMuted ? "bgm" : "on";
+  el.title = allMuted ? "소리 꺼짐 (M 해제)"
+           : bgmMuted ? "BGM 꺼짐 · 효과음만 (B 해제)"
+           : "소리 켜짐 · M=전체 뮤트, B=BGM 뮤트";
+}
+document.addEventListener("DOMContentLoaded", () => {
+  const el = document.getElementById("mute-toggle");
+  if (el) el.addEventListener("click", (ev) => {
+    audio.unlock();
+    // 왼클릭: 전체 토글, Shift: BGM 만 토글
+    if (ev.shiftKey) audio.toggleMuteBgm();
+    else audio.toggleMuteAll();
+    updateMuteUI();
+  });
+  updateMuteUI();
+
+  // 스테이지 버튼: 현재 랭크의 컷씬 다시 재생
+  const stageBtn = document.getElementById("stage-btn");
+  if (stageBtn) stageBtn.addEventListener("click", () => {
+    audio.unlock();
+    const rIdx = Math.min(state.level - 1, ALCHEMIST_RANKS.length - 1);
+    showStageIntro(rIdx, null);
+  });
+});
 
 loadStats();
 renderStats();
-newGame();
-requestAnimationFrame(tick);
+
+// 스토리 인트로 → 게임 시작
+const progress = loadProgress();
+function bootGame() {
+  newGame();
+  requestAnimationFrame(tick);
+}
+if (!progress.seenIntro) {
+  // 인트로 첫 재생 → seenIntro 저장 후 스테이지 1 컷씬 → 게임
+  showStoryIntro(() => {
+    progress.seenIntro = true;
+    saveProgress(progress);
+    showStageIntro(0, bootGame);
+  });
+} else {
+  bootGame();
+}
