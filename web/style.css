@@ -1,0 +1,649 @@
+:root {
+  --cell: 56px;
+  --gap: 8px;
+  --pad: 10px;
+  --bg: #0b0d16;
+  --fg: #e8e8ec;
+  --panel: #171923;
+  --panel-2: #262a38;
+  --accent: #ff5c73;
+
+  --p1-base: #f7b937;
+  --p1-light: #ffe27a;
+  --p1-dark: #a4750a;
+
+  --p2-base: #3fb653;
+  --p2-light: #96e59f;
+  --p2-dark: #1e6b28;
+
+  --p3-base: #2c8fef;
+  --p3-light: #7fc0fb;
+  --p3-dark: #145394;
+
+  --grey-base: #8892a6;
+  --grey-light: #c0c8d6;
+  --grey-dark: #3d4658;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0; color: var(--fg); min-height: 100vh;
+  font-family: "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(60,80,160,0.25), transparent 55%),
+    radial-gradient(ellipse at 80% 100%, rgba(180,60,140,0.15), transparent 60%),
+    radial-gradient(ellipse at top, #1a1e33, var(--bg) 70%);
+  background-attachment: fixed;
+}
+/* 배경에 원자 오빗 궤도 살짝 뿌리기 */
+body::before {
+  content: "";
+  position: fixed; inset: 0;
+  background-image:
+    radial-gradient(circle 2px at 10% 20%, rgba(255,255,255,0.15) 100%, transparent),
+    radial-gradient(circle 1px at 25% 60%, rgba(255,255,255,0.12) 100%, transparent),
+    radial-gradient(circle 2px at 65% 30%, rgba(255,255,255,0.1) 100%, transparent),
+    radial-gradient(circle 1px at 85% 70%, rgba(255,255,255,0.13) 100%, transparent),
+    radial-gradient(circle 1px at 45% 85%, rgba(255,255,255,0.08) 100%, transparent),
+    radial-gradient(circle 2px at 90% 15%, rgba(255,255,255,0.12) 100%, transparent);
+  background-size: 100% 100%;
+  pointer-events: none;
+  z-index: -1;
+}
+/* Noto Sans KR from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+
+.app { max-width: 1100px; margin: 0 auto; padding: 24px; }
+header h1 {
+  font-weight: 700; letter-spacing: 0.5px; margin: 0 0 20px; font-size: 26px;
+  color: #ffe3a8;
+  text-shadow: 0 0 20px rgba(255, 200, 100, 0.35);
+}
+header .subtitle {
+  font-size: 0.55em; opacity: 0.5; margin-left: 10px;
+  font-style: italic; font-weight: 400; letter-spacing: 1px;
+  color: #b89a5c;
+}
+
+.game { display: flex; gap: 28px; align-items: flex-start; }
+.playfield { display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; }
+
+/* ── 필드 컨테이너: 절대위치 볼들의 부모 ─────────────────────────── */
+.field-wrap {
+  position: relative;
+  width: calc(8 * var(--cell) + 7 * var(--gap) + 2 * var(--pad));
+  height: calc(12 * var(--cell) + 11 * var(--gap) + 2 * var(--pad));
+  background:
+    /* 미묘한 격자 라인 */
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255,255,255,0.02) 1px, transparent 1px),
+    /* 상단 은은한 하이라이트 + 배경 그라디언트 */
+    linear-gradient(180deg, #1e2135 0%, #0f1119 60%, #0a0c14 100%);
+  background-size:
+    calc(var(--cell) + var(--gap)) 100%,
+    100% calc(var(--cell) + var(--gap)),
+    100% 100%;
+  border-radius: 16px;
+  box-shadow:
+    inset 0 0 80px rgba(0,0,0,0.6),
+    inset 0 2px 0 rgba(255,255,255,0.08),
+    inset 0 -20px 40px rgba(0,0,0,0.4),
+    0 12px 32px rgba(0,0,0,0.6),
+    0 0 0 1px rgba(255,255,255,0.05);
+  overflow: hidden;
+}
+/* 필드 배경에 연금술 서클 SVG (중앙 정렬, 은은하게) */
+.field-wrap::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 600' fill='none' stroke='rgba(255,200,100,0.09)' stroke-width='1'>\
+<circle cx='200' cy='300' r='190'/>\
+<circle cx='200' cy='300' r='155'/>\
+<circle cx='200' cy='300' r='115'/>\
+<circle cx='200' cy='300' r='60'/>\
+<polygon points='200,120 355,395 45,395' stroke='rgba(255,200,100,0.07)'/>\
+<polygon points='200,480 45,205 355,205' stroke='rgba(255,200,100,0.07)'/>\
+<circle cx='200' cy='300' r='6' fill='rgba(255,200,100,0.15)' stroke='none'/>\
+<text x='200' y='125' text-anchor='middle' font-size='16' fill='rgba(255,200,100,0.15)' stroke='none'>☉</text>\
+<text x='355' y='400' text-anchor='middle' font-size='16' fill='rgba(255,200,100,0.15)' stroke='none'>☿</text>\
+<text x='45' y='400' text-anchor='middle' font-size='16' fill='rgba(255,200,100,0.15)' stroke='none'>☽</text>\
+<text x='200' y='495' text-anchor='middle' font-size='16' fill='rgba(255,200,100,0.15)' stroke='none'>♁</text>\
+<text x='45' y='210' text-anchor='middle' font-size='16' fill='rgba(255,200,100,0.15)' stroke='none'>♂</text>\
+<text x='355' y='210' text-anchor='middle' font-size='16' fill='rgba(255,200,100,0.15)' stroke='none'>♀</text>\
+</svg>") center / 90% no-repeat;
+  pointer-events: none;
+  z-index: 0;
+}
+.field-wrap > .ball { z-index: 1; }
+
+/* ── 볼(원소) — 기본 (비금속): 유리·젤리 광택 ───────────────────── */
+.ball {
+  position: absolute;
+  width: var(--cell);
+  height: var(--cell);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: white;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -0.3px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.75), 0 0 4px rgba(0,0,0,0.5);
+  background:
+    /* 상단 밝은 하이라이트 코어 */
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 30%),
+    /* 메인 컬러 */
+    radial-gradient(circle at 32% 28%,
+      var(--light) 4%,
+      var(--base) 42%,
+      var(--dark) 100%);
+  box-shadow:
+    inset -8px -10px 16px rgba(0,0,0,0.4),
+    inset 5px 7px 14px rgba(255,255,255,0.35),
+    inset 0 -4px 8px rgba(0,0,0,0.15),
+    0 5px 10px rgba(0,0,0,0.5),
+    0 0 0 1px rgba(0,0,0,0.2),
+    0 0 12px rgba(255,255,255,0.02);
+  transition: transform 380ms cubic-bezier(0.45, 0.05, 0.55, 0.95),
+              opacity 240ms ease-out;
+  user-select: none;
+  pointer-events: none;
+  will-change: transform;
+}
+.ball::after {
+  /* 상단 강한 스펙큘러 하이라이트 (glass gloss) */
+  content: "";
+  position: absolute; top: 10%; left: 22%; width: 42%; height: 26%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse,
+    rgba(255,255,255,0.75) 0%,
+    rgba(255,255,255,0.35) 40%,
+    transparent 75%);
+  filter: blur(0.3px);
+  pointer-events: none;
+}
+
+.ball.p1 { --base: var(--p1-base); --light: var(--p1-light); --dark: var(--p1-dark); color: #2b1e00; text-shadow: 0 1px 1px rgba(255,255,255,0.3); }
+.ball.p2 { --base: var(--p2-base); --light: var(--p2-light); --dark: var(--p2-dark); }
+.ball.p3 { --base: var(--p3-base); --light: var(--p3-light); --dark: var(--p3-dark); }
+
+/* 금속 원소: 진짜 크롬 광택 — 3-밴드 그라디언트 + 강한 스펙큘러 + shimmer 애니메이션 */
+.ball.metal {
+  background:
+    /* 최상단 밝은 점 하이라이트 */
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.3) 10%, transparent 25%),
+    /* 크롬 특유의 위-아래 밝음, 중간 어두운 밴드 */
+    linear-gradient(180deg,
+      var(--light) 0%,
+      #ffffff 12%,
+      var(--base) 38%,
+      var(--dark) 55%,
+      var(--base) 72%,
+      var(--light) 92%,
+      #ffffff 100%);
+  box-shadow:
+    inset -10px -8px 22px rgba(0,0,0,0.55),
+    inset 8px 8px 20px rgba(255,255,255,0.7),
+    inset 0 22px 22px -10px rgba(255,255,255,0.55),
+    inset 0 -10px 18px -8px rgba(255,255,255,0.5),
+    0 6px 12px rgba(0,0,0,0.6),
+    0 0 0 1px rgba(0,0,0,0.4);
+  /* NOTE: position/absolute 는 .ball 기본값 그대로 유지 (덮어쓰면 정렬 어긋남) */
+  overflow: hidden;
+}
+.ball.metal::after {
+  top: 4%; left: 16%; width: 52%; height: 32%;
+  background: radial-gradient(ellipse, rgba(255,255,255,1) 0%, rgba(255,255,255,0.4) 50%, transparent 75%);
+  filter: blur(0.5px);
+}
+.ball.metal::before {
+  /* 애니메이티드 shimmer 밴드 */
+  content: "";
+  position: absolute;
+  top: -20%; left: -30%;
+  width: 40%; height: 140%;
+  background: linear-gradient(105deg,
+    transparent 40%,
+    rgba(255,255,255,0.55) 50%,
+    transparent 60%);
+  transform: rotate(20deg);
+  animation: shimmer 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes shimmer {
+  0%   { left: -40%; opacity: 0; }
+  30%  { opacity: 1; }
+  60%  { opacity: 1; }
+  100% { left: 120%; opacity: 0; }
+}
+.mini-ball.metal {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,0.9), transparent 25%),
+    linear-gradient(180deg, var(--light) 0%, #ffffff 12%, var(--base) 40%, var(--dark) 60%, var(--base) 78%, var(--light) 100%);
+  box-shadow:
+    inset -4px -3px 8px rgba(0,0,0,0.5),
+    inset 3px 4px 6px rgba(255,255,255,0.7),
+    0 2px 4px rgba(0,0,0,0.55);
+}
+
+/* 이온 첨자 (sup 태그) 스타일 */
+.ball sup, .mini-ball sup {
+  font-size: 0.62em;
+  vertical-align: super;
+  line-height: 0;
+  margin-left: 1px;
+  font-weight: 900;
+}
+
+/* 파티클 (소거 시 스파클) */
+.particle {
+  position: absolute;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 50;
+  animation: particle-fly 700ms cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+  box-shadow: 0 0 8px currentColor, 0 0 2px white;
+}
+@keyframes particle-fly {
+  0%   { transform: translate(-50%, -50%) scale(1.4); opacity: 1; }
+  40%  { opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.2); opacity: 0; }
+}
+
+.ball.cluster {
+  box-shadow:
+    inset -6px -8px 14px rgba(0,0,0,0.35),
+    inset 4px 6px 12px rgba(255,255,255,0.28),
+    0 4px 8px rgba(0,0,0,0.45),
+    0 0 0 2px rgba(255,255,255,0.6),
+    0 0 12px rgba(255,255,255,0.25);
+}
+
+/* 비활성 기체: 주기 색상 유지하면서 반투명 가스 느낌 + 발광 호흡 (궤도선 없음) */
+.ball.noble {
+  background:
+    /* 상단 강한 하이라이트 */
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.2) 20%, transparent 45%),
+    /* 은은한 서브 하이라이트 */
+    radial-gradient(circle at 65% 72%, rgba(255,255,255,0.18) 0%, transparent 40%),
+    /* 주기 색상 (희석해서 기체 느낌) */
+    radial-gradient(circle at 40% 40%,
+      var(--light) 0%,
+      var(--base) 45%,
+      var(--dark) 100%);
+  box-shadow:
+    inset -6px -8px 14px rgba(0,0,0,0.25),
+    inset 5px 7px 14px rgba(255,255,255,0.45),
+    inset 0 0 22px rgba(255,255,255,0.18),
+    0 3px 8px rgba(0,0,0,0.35),
+    0 0 14px rgba(255,255,255,0.1),
+    0 0 0 1px rgba(255,255,255,0.25);
+  color: white;
+  opacity: 0.92;
+  animation: noble-glow 3.2s ease-in-out infinite;
+}
+/* 발광 호흡만 (색상 변화·궤도 회전 없음 — 전자 개념과 헷갈리지 않게) */
+@keyframes noble-glow {
+  0%, 100% {
+    filter: brightness(1);
+    box-shadow:
+      inset -6px -8px 14px rgba(0,0,0,0.25),
+      inset 5px 7px 14px rgba(255,255,255,0.45),
+      inset 0 0 22px rgba(255,255,255,0.18),
+      0 3px 8px rgba(0,0,0,0.35),
+      0 0 14px rgba(255,255,255,0.1),
+      0 0 0 1px rgba(255,255,255,0.25);
+  }
+  50% {
+    filter: brightness(1.12);
+    box-shadow:
+      inset -6px -8px 14px rgba(0,0,0,0.25),
+      inset 5px 7px 14px rgba(255,255,255,0.55),
+      inset 0 0 30px rgba(255,255,255,0.28),
+      0 3px 8px rgba(0,0,0,0.35),
+      0 0 22px rgba(255,255,255,0.22),
+      0 0 0 1px rgba(255,255,255,0.4);
+  }
+}
+.ball.noble .label {
+  color: white;
+  padding: 1px 5px;
+  font-size: 14px;
+  font-weight: 900;
+  text-shadow: 0 0 8px rgba(180,220,255,0.7), 0 1px 3px rgba(0,0,0,0.6);
+  z-index: 2;
+  position: relative;
+}
+.ball.noble::after {
+  opacity: 0.8;
+}
+
+.ball.preview {
+  opacity: 0.85;
+  transform-origin: center;
+}
+.ball.preview.hint::before {
+  /* 낙하 예상 위치 힌트 (얇은 화살표는 생략, 대신 outline) */
+  content: "";
+  position: absolute; inset: -6px;
+  border-radius: 50%;
+  border: 2px dashed rgba(255,255,255,0.35);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50% { opacity: 0.65; transform: scale(1.05); }
+}
+
+/* 자연낙하 중엔 CSS 전환 끔 (매 프레임 JS로 갱신) */
+.ball.falling { transition: none; }
+/* 중력에 의한 낙하(소거 후)는 짧은 전환 */
+.ball.gravity { transition: transform 260ms cubic-bezier(0.55, 0, 0.9, 0.3); }
+/* 소거 애니메이션: 위치 유지하고 스케일·투명도만 */
+.ball.clearing {
+  transition: transform 320ms ease-out, opacity 320ms ease-out, filter 320ms ease-out !important;
+  transform: translate(var(--px), var(--py)) scale(1.6) !important;
+  opacity: 0 !important;
+  filter: brightness(2.2) saturate(1.5);
+}
+
+.controls-hint {
+  display: flex; gap: 14px; opacity: 0.55; font-size: 12px; margin-top: 4px;
+}
+.controls-hint span { padding: 3px 8px; background: rgba(255,255,255,0.05); border-radius: 4px; }
+
+/* ── 규칙 배너 (어떤 규칙이 발동했는지 표시) ─────────────────── */
+.rule-banner {
+  min-height: 32px;
+  width: calc(8 * var(--cell) + 7 * var(--gap) + 2 * var(--pad));
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.04);
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--fg);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 180ms ease-out, transform 180ms ease-out;
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px;
+}
+.rule-banner.show { opacity: 1; transform: translateY(0); }
+.rule-banner .chain-tag {
+  font-size: 12px; opacity: 0.7; letter-spacing: 0.5px;
+  padding: 2px 8px; border-radius: 4px; background: rgba(255,255,255,0.05);
+}
+.rule-banner .combo-tag { background: rgba(255,180,80,0.25); color: #ffd08c; opacity: 1; font-weight: 700; }
+.rule-banner .simul-tag { background: rgba(255,100,180,0.25); color: #ffa0d0; opacity: 1; font-weight: 700; }
+.rule-banner .name-kr { font-size: 11px; opacity: 0.75; margin-left: 2px; }
+.rule-banner .formula sub { font-size: 0.75em; vertical-align: sub; line-height: 0; }
+.rule-banner .rule-tag {
+  padding: 3px 10px; border-radius: 5px; font-size: 13px;
+  background: rgba(255,255,255,0.12);
+}
+.rule-banner .formula {
+  font-weight: 700; margin-left: 3px;
+}
+.rule-banner .formula sub {
+  font-size: 0.75em; vertical-align: sub; line-height: 0; margin-left: 0;
+}
+.rule-banner .rule-tag.molecule { background: rgba(120, 200, 255, 0.25); color: #a3d9ff; }
+.rule-banner .rule-tag.diatomic { background: rgba(140, 255, 200, 0.25); color: #9dffd5; }
+.rule-banner .rule-tag.period   { background: rgba(255, 220, 100, 0.25); color: #ffe89a; }
+.rule-banner .rule-tag.group    { background: rgba(255, 130, 220, 0.25); color: #ff9fe0; }
+.rule-banner .rule-tag.metal    { background: rgba(200, 160, 255, 0.25); color: #d4b6ff; }
+
+/* 볼에 규칙별 하이라이트 색상 (소거 순간에 적용) */
+.ball.match-molecule { box-shadow: inset -6px -8px 14px rgba(0,0,0,0.35), inset 4px 6px 12px rgba(255,255,255,0.28), 0 0 0 3px #86c8ff, 0 0 18px rgba(120,200,255,0.6); }
+.ball.match-diatomic { box-shadow: inset -6px -8px 14px rgba(0,0,0,0.35), inset 4px 6px 12px rgba(255,255,255,0.28), 0 0 0 3px #8cffc8, 0 0 18px rgba(140,255,200,0.6); }
+.ball.match-period   { box-shadow: inset -6px -8px 14px rgba(0,0,0,0.35), inset 4px 6px 12px rgba(255,255,255,0.28), 0 0 0 3px #ffdc64, 0 0 18px rgba(255,220,100,0.6); }
+.ball.match-group    { box-shadow: inset -6px -8px 14px rgba(0,0,0,0.35), inset 4px 6px 12px rgba(255,255,255,0.28), 0 0 0 3px #ff82dc, 0 0 18px rgba(255,130,220,0.6); }
+.ball.match-metal    { box-shadow: inset -6px -8px 14px rgba(0,0,0,0.35), inset 4px 6px 12px rgba(255,255,255,0.28), 0 0 0 3px #c8a0ff, 0 0 18px rgba(200,160,255,0.6); }
+
+/* ── 사이드바 ──────────────────────────────────────────────────────── */
+.sidebar {
+  display: flex; flex-direction: column; gap: 16px;
+  padding: 18px; background: var(--panel); border-radius: 12px;
+  min-width: 260px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+}
+.stat .label { font-size: 11px; opacity: 0.55; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+.stat .value { font-size: 32px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
+.stat.two-col { display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: end; }
+.level-bar-wrap {
+  height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;
+  margin-top: 4px;
+}
+.level-bar {
+  height: 100%; background: linear-gradient(90deg, #ff8a3d, #ffcf3d);
+  border-radius: 4px; transition: width 300ms ease-out;
+  box-shadow: 0 0 8px rgba(255, 200, 100, 0.5);
+}
+/* 점수 팝업 */
+.score-popup {
+  position: absolute;
+  color: #ffe066; font-weight: 900; font-size: 26px;
+  text-shadow: 0 0 12px rgba(255,224,102,0.9), 0 2px 4px rgba(0,0,0,0.5);
+  pointer-events: none; z-index: 100;
+  animation: score-float 900ms cubic-bezier(0.2, 0.6, 0.3, 1) forwards;
+}
+.score-popup.big { font-size: 34px; color: #ffb84d; }
+@keyframes score-float {
+  0%   { opacity: 0; transform: translate(-50%, 0) scale(0.6); }
+  20%  { opacity: 1; transform: translate(-50%, -20px) scale(1.15); }
+  100% { opacity: 0; transform: translate(-50%, -100px) scale(1); }
+}
+/* ── 랭크 표시 (사이드바) ─────────────────────────────────── */
+.rank-title {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 8px;
+}
+.rank-text { min-width: 0; }
+.rank-name {
+  font-family: "Noto Sans KR", serif;
+  font-weight: 700; font-size: 15px;
+  color: #ffd66b;
+  letter-spacing: 0.3px;
+  text-shadow: 0 0 8px rgba(255, 200, 100, 0.35);
+  line-height: 1.2;
+}
+.rank-era { font-size: 11px; opacity: 0.55; font-weight: 500; margin-top: 2px; }
+
+/* 화학자 초상 (원형 프레임, 세피아 톤) */
+.chemist-portrait {
+  position: relative;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(255, 200, 100, 0.5);
+  box-shadow:
+    0 0 12px rgba(255, 200, 100, 0.3),
+    inset 0 0 8px rgba(0,0,0,0.4);
+  background: linear-gradient(135deg, #3a2a15, #1e1408);
+  flex-shrink: 0;
+}
+.chemist-portrait img {
+  width: 100%; height: 100%; object-fit: cover;
+  display: block;
+  filter: sepia(0.35) saturate(1.1) contrast(1.05);
+}
+.portrait-fallback {
+  position: absolute; inset: 0;
+  align-items: center; justify-content: center;
+  color: #ffdf9a; font-weight: 900; font-size: 18px;
+  text-shadow: 0 0 10px rgba(255, 200, 100, 0.6);
+  background: radial-gradient(circle, #4a3820, #1e1408);
+}
+
+/* ── 연금술 승급 토스트 ────────────────────────────────── */
+.level-up-toast {
+  position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%);
+  background:
+    radial-gradient(circle at 50% 30%, rgba(255,220,140,0.3), transparent 65%),
+    linear-gradient(135deg, #3a2a15 0%, #1e1408 50%, #3a2a15 100%);
+  color: #ffdf9a;
+  padding: 24px 48px; border-radius: 14px;
+  text-align: center;
+  border: 2px solid rgba(255,200,100,0.5);
+  box-shadow:
+    0 0 60px rgba(255, 200, 80, 0.5),
+    0 0 120px rgba(255, 200, 80, 0.2),
+    inset 0 0 30px rgba(255,180,60,0.15);
+  z-index: 200;
+  animation: level-up 2.2s ease-out forwards;
+  pointer-events: none;
+  min-width: 260px;
+}
+.lvl-sigil {
+  font-size: 32px; line-height: 1;
+  color: #ffd66b;
+  text-shadow: 0 0 20px rgba(255, 200, 80, 0.8);
+  animation: sigil-spin 2.2s ease-out;
+  margin-bottom: 8px;
+}
+.level-up-toast .chemist-portrait {
+  margin: 4px auto 12px;
+  border-width: 3px;
+  box-shadow:
+    0 0 24px rgba(255, 200, 100, 0.5),
+    inset 0 0 12px rgba(0,0,0,0.4);
+}
+.level-up-toast .portrait-fallback { font-size: 42px; }
+@keyframes sigil-spin {
+  0% { transform: rotate(0deg) scale(0.3); opacity: 0; }
+  40% { transform: rotate(360deg) scale(1.2); opacity: 1; }
+  100% { transform: rotate(360deg) scale(1); }
+}
+.lvl-badge {
+  font-size: 12px; letter-spacing: 2px;
+  color: #b89a5c; margin-bottom: 8px; font-weight: 600;
+}
+.lvl-name {
+  font-size: 26px; font-weight: 900;
+  color: #ffe3a8;
+  text-shadow: 0 0 16px rgba(255, 200, 100, 0.6);
+  margin-bottom: 4px;
+}
+.lvl-desc {
+  font-size: 13px; opacity: 0.75; font-style: italic;
+}
+@keyframes level-up {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+  15%  { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+  25%  { transform: translate(-50%, -50%) scale(1); }
+  85%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -70%) scale(0.95); }
+}
+
+.next-wrap { position: relative; width: fit-content; padding: 6px; background: var(--panel-2); border-radius: 8px; }
+.next {
+  display: grid; grid-template-columns: repeat(3, 36px); gap: 4px;
+}
+.next .mini-ball {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: radial-gradient(circle at 30% 25%, var(--light) 5%, var(--base) 50%, var(--dark) 100%);
+  box-shadow: inset -3px -4px 7px rgba(0,0,0,0.35), inset 2px 3px 5px rgba(255,255,255,0.2), 0 2px 3px rgba(0,0,0,0.4);
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-weight: 700; font-size: 11px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+  position: relative;
+}
+.next .mini-ball.p1 { --base: var(--p1-base); --light: var(--p1-light); --dark: var(--p1-dark); color: #2b1e00; text-shadow: none; }
+.next .mini-ball.p2 { --base: var(--p2-base); --light: var(--p2-light); --dark: var(--p2-dark); }
+.next .mini-ball.p3 { --base: var(--p3-base); --light: var(--p3-light); --dark: var(--p3-dark); }
+.next .mini-ball.empty { background: transparent; box-shadow: none; }
+
+.rules ol { margin: 4px 0 0; padding-left: 20px; font-size: 12px; opacity: 0.85; line-height: 1.55; }
+.rules ol li { margin-bottom: 3px; }
+.rules .note { margin-top: 8px; font-size: 11px; opacity: 0.55; line-height: 1.4; }
+
+/* ── 학습 기록 ─────────────────────────────────────────────────── */
+.learning .label {
+  display: flex; justify-content: space-between; align-items: center;
+}
+#stats-content { max-height: 420px; overflow-y: auto; padding-right: 4px; }
+#stats-content::-webkit-scrollbar { width: 6px; }
+#stats-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+.stat-cat { margin-top: 8px; margin-bottom: 3px; }
+.stat-cat:first-child { margin-top: 4px; }
+.cat-label {
+  font-size: 10px; padding: 2px 7px; border-radius: 3px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.cat-label.mol { background: rgba(120,200,255,0.2); color: #a3d9ff; }
+.cat-label.dia { background: rgba(140,255,200,0.2); color: #9dffd5; }
+.cat-label.other { background: rgba(180,180,180,0.15); color: #d0d0d0; }
+.cat-label.attack { background: rgba(255,140,140,0.2); color: #ffb0b0; }
+.cat-label.log { background: rgba(180,220,255,0.15); color: #c8ddff; }
+
+/* 이벤트 로그 행 */
+.event-row {
+  padding: 6px 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.event-meta { display: flex; gap: 6px; align-items: center; margin-bottom: 3px; }
+.ev-badge {
+  padding: 1px 6px; border-radius: 3px; font-weight: 700; font-size: 11px;
+  line-height: 1.4;
+}
+.ev-badge.combo { background: rgba(255,180,80,0.28); color: #ffd08c; }
+.ev-badge.simul { background: rgba(255,100,180,0.28); color: #ffa0d0; }
+.ev-score { margin-left: auto; font-weight: 700; color: #ffd66b; font-size: 12px; font-variant-numeric: tabular-nums; }
+.event-body { line-height: 1.5; font-size: 12px; opacity: 0.92; }
+.event-body sub { font-size: 0.75em; vertical-align: sub; line-height: 0; }
+.ev-tag {
+  display: inline-block;
+  padding: 1px 5px; border-radius: 3px; font-size: 10px; font-weight: 700;
+  margin-right: 3px; letter-spacing: 0.2px;
+}
+.ev-tag.molecule { background: rgba(120,200,255,0.22); color: #a3d9ff; }
+.ev-tag.diatomic { background: rgba(140,255,200,0.22); color: #9dffd5; }
+.ev-tag.period   { background: rgba(255,220,100,0.22); color: #ffe89a; }
+.ev-tag.group    { background: rgba(255,130,220,0.22); color: #ff9fe0; }
+.ev-tag.metal    { background: rgba(200,160,255,0.22); color: #d4b6ff; }
+.ev-formula { font-weight: 700; }
+.ev-name { opacity: 0.6; font-size: 10.5px; margin-left: 3px; margin-right: 2px; }
+.stat-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 13px; padding: 4px 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  gap: 8px;
+}
+.stat-row .row-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.stat-row .formula-name { font-weight: 700; font-size: 14px; }
+.stat-row .name-kr { font-size: 11px; opacity: 0.65; }
+.stat-row .count {
+  font-weight: 700; font-variant-numeric: tabular-nums;
+  min-width: 26px; text-align: right; opacity: 0.9;
+}
+.stat-row sub { font-size: 0.75em; vertical-align: sub; line-height: 0; }
+.stat-empty { opacity: 0.4; font-size: 12px; padding: 8px 0; text-align: center; }
+.stat-more { font-size: 10px; opacity: 0.5; text-align: right; padding: 2px 4px; font-style: italic; }
+.stat-summary {
+  margin-top: 10px; padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  font-size: 11px; opacity: 0.65; line-height: 1.5;
+}
+
+.legend-row { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 3px; }
+.swatch { display: inline-block; width: 14px; height: 14px; border-radius: 50%;
+  box-shadow: inset -2px -2px 3px rgba(0,0,0,0.35), inset 1px 1px 2px rgba(255,255,255,0.25); }
+.swatch.p1 { background: radial-gradient(circle at 30% 25%, var(--p1-light), var(--p1-base)); }
+.swatch.p2 { background: radial-gradient(circle at 30% 25%, var(--p2-light), var(--p2-base)); }
+.swatch.p3 { background: radial-gradient(circle at 30% 25%, var(--p3-light), var(--p3-base)); }
+
+/* ── 오버레이 ──────────────────────────────────────────────────────── */
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(6px);
+}
+.overlay.hidden { display: none; }
+.overlay-inner {
+  background: var(--panel); padding: 40px 60px; border-radius: 14px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+.overlay-title { font-size: 36px; margin-bottom: 8px; font-weight: 600; }
+.overlay-sub { opacity: 0.7; }

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Elements Puyo — 원소 뿌요</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>⚗️ 원소 연금술사 <span class="subtitle">Elements Alchemist</span></h1>
+  </header>
+
+  <div class="game">
+    <section class="playfield">
+      <div class="rule-banner" id="rule-banner"></div>
+      <div class="field-wrap" id="field"></div>
+      <div class="controls-hint">
+        <span>← → 좌우 이동</span>
+        <span>↓ 빠른 낙하 (누르는 동안)</span>
+        <span>N 새 게임</span>
+      </div>
+    </section>
+
+    <aside class="sidebar">
+      <div class="stat two-col">
+        <div>
+          <div class="label">지혜(점수)</div>
+          <div class="value" id="score">0</div>
+        </div>
+        <div>
+          <div class="label">랭크</div>
+          <div class="value" id="level">1</div>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="rank-title" id="rank-title">견습 연금술사</div>
+        <div class="label">다음 승급까지</div>
+        <div class="level-bar-wrap"><div class="level-bar" id="level-bar"></div></div>
+      </div>
+      <div class="stat">
+        <div class="label">연쇄</div>
+        <div class="value" id="chain">0</div>
+      </div>
+      <div class="stat">
+        <div class="label">다음</div>
+        <div class="next-wrap">
+          <div class="next" id="next"></div>
+        </div>
+      </div>
+      <div class="stat rules">
+        <div class="label">소거 규칙</div>
+        <ol>
+          <li>분자 (전하 합 0, 다른 원소 2+, 상하좌우 연결)</li>
+          <li>같은 주기 3+ 가로, 서로 다른 원소</li>
+          <li>같은 족 3+ 세로, 서로 다른 원소</li>
+          <li>금속 결합 — 금속 4+ 상하좌우 연결</li>
+          <li>이원자 기체 — H, N, O, F, Cl 같은 원소 2+ 상하좌우 연결</li>
+        </ol>
+        <div class="note">비활성 기체는 규칙 2·3만.<br>규칙 1은 유효 부분집합 단위.<br>한 번에 이온 하나씩 낙하.</div>
+      </div>
+      <div class="stat legend">
+        <div class="label">주기 색상</div>
+        <div class="legend-row"><span class="swatch p1"></span> 1주기 (H, He)</div>
+        <div class="legend-row"><span class="swatch p2"></span> 2주기 (Li~Ne)</div>
+        <div class="legend-row"><span class="swatch p3"></span> 3주기 (Na~Ar)</div>
+      </div>
+      <div class="stat learning">
+        <div class="label">학습 기록</div>
+        <div id="stats-content"></div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="overlay hidden" id="overlay">
+    <div class="overlay-inner">
+      <div class="overlay-title" id="overlay-title">게임 오버</div>
+      <div class="overlay-sub">N 키로 새 게임</div>
+    </div>
+  </div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>
