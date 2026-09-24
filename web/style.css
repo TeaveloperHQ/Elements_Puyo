@@ -1072,3 +1072,75 @@ header .subtitle {
   .story-title { font-size: 30px; }
   .story-line { font-size: 14px; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   방해석 (Au/Ag) — 게임 규칙 참여 안 함, 순수 장애물
+   ══════════════════════════════════════════════════════════════ */
+.ball.obstacle {
+  color: #1e1408;
+  text-shadow: 0 1px 1px rgba(255,255,255,0.4);
+}
+.ball.obstacle.gold {
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 30%),
+    radial-gradient(circle at 32% 28%,
+      #ffe98a 4%, #ffcc4a 42%, #a86a1e 100%);
+  box-shadow:
+    inset -8px -10px 16px rgba(90,50,0,0.55),
+    inset 5px 7px 14px rgba(255,255,255,0.5),
+    0 4px 10px rgba(0,0,0,0.55),
+    0 0 12px rgba(255,200,60,0.35),
+    0 0 0 1.5px rgba(255,220,120,0.6);
+}
+.ball.obstacle.silver {
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 30%),
+    radial-gradient(circle at 32% 28%,
+      #ffffff 4%, #d0d5da 42%, #6a7280 100%);
+  box-shadow:
+    inset -8px -10px 16px rgba(50,55,70,0.55),
+    inset 5px 7px 14px rgba(255,255,255,0.7),
+    0 4px 10px rgba(0,0,0,0.5),
+    0 0 10px rgba(220,225,235,0.35),
+    0 0 0 1.5px rgba(240,240,245,0.7);
+}
+.ball.obstacle .sym {
+  font-family: Georgia, serif;
+  font-weight: 900;
+  font-size: 18px;
+}
+/* 방해석 하늘 낙하 중: 살짝 반짝임 + 잔상 */
+.ball.nuisance-falling {
+  transition: none;
+  filter: drop-shadow(0 2px 6px rgba(255,220,120,0.5)) brightness(1.08);
+}
+.mini-ball.obstacle {
+  color: #1e1408;
+}
+.mini-ball.obstacle.gold {
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,0.7) 0%, transparent 30%),
+    linear-gradient(180deg, #ffe98a 0%, #ffcc4a 50%, #a86a1e 100%);
+  box-shadow: inset -3px -3px 6px rgba(90,50,0,0.5), 0 2px 5px rgba(0,0,0,0.4);
+}
+.mini-ball.obstacle.silver {
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,0.85) 0%, transparent 30%),
+    linear-gradient(180deg, #ffffff 0%, #d0d5da 50%, #6a7280 100%);
+  box-shadow: inset -3px -3px 6px rgba(50,55,70,0.5), 0 2px 5px rgba(0,0,0,0.4);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Solo 모드 — 오른쪽 상대 필드 숨기고 단일 플레이어 필드로
+   ══════════════════════════════════════════════════════════════ */
+body.solo-mode .opponent-side { display: none; }
+body.solo-mode .duel-center   { display: none; }
+body.solo-mode .duel {
+  grid-template-columns: 1fr;
+  justify-content: center;
+}
+body.solo-mode .player-side {
+  align-items: center;
+}
+/* 스테이지 버튼도 duel 모드용이라 solo 에서는 숨김 */
+body.solo-mode #stage-btn { display: none; }
