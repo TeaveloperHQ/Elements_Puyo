@@ -152,6 +152,25 @@ header .subtitle {
 .mini-stat .value { font-size: 18px; font-weight: 800; color: #ffd66b; }
 .mini-stat.next-mini { flex-direction: row; align-items: center; gap: 8px; margin-left: auto; }
 .mini-stat.next-mini .label { align-self: center; }
+/* NEXT 를 side-header 우측에 상시 표시 (다음 조각 스포너 열 위로) */
+.mini-stat.next-mini.next-top {
+  margin-left: 12px;
+  padding: 3px 8px;
+  background: rgba(255, 200, 100, 0.08);
+  border: 1px solid rgba(255, 200, 100, 0.25);
+  border-radius: 20px;
+  gap: 6px;
+}
+.mini-stat.next-mini.next-top .label {
+  font-family: Georgia, serif; font-size: 10px; letter-spacing: 1.2px;
+  color: #ffd66b; opacity: 0.9;
+}
+.mini-stat.next-mini.next-top .next {
+  grid-template-columns: 30px; gap: 0;
+}
+.mini-stat.next-mini.next-top .next .mini-ball {
+  width: 30px; height: 30px; font-size: 11px;
+}
 
 /* 중앙 VS 영역 */
 .duel-center {
@@ -286,20 +305,19 @@ header .subtitle {
 }
 @media (max-width: 640px) {
   /* 화면에 딱 맞도록 셀 크기를 동적 계산.
-     가로: (뷰포트폭 − 좌우 버튼 여백 96 − 필드 gap/pad 38) / 8
-     세로: (뷰포트높이 − 헤더/HP/스탯/여백 210) / 12
-     둘 중 작은 값 (최대 40px). */
+     가로: 필드 좌우로 여백 68px 씩 확보 (마법원 버튼 56px + 4~8 여유)
+     세로: (뷰포트높이 − 헤더/HP/NEXT/스탯/여백 230) / 12
+     둘 중 작은 값 (최대 38px). */
   :root {
-    /* dvh 미지원 브라우저용 폴백 (vh 우선 적용) */
     --cell: min(
-      40px,
-      calc((100vw - 134px) / 8),
-      calc((100vh - 210px) / 12)
+      38px,
+      calc((100vw - 174px) / 8),
+      calc((100vh - 230px) / 12)
     );
     --cell: min(
-      40px,
-      calc((100vw - 134px) / 8),
-      calc((100dvh - 210px) / 12)
+      38px,
+      calc((100vw - 174px) / 8),
+      calc((100dvh - 230px) / 12)
     );
     --gap: 4px;
     --pad: 5px;
@@ -315,8 +333,13 @@ header .subtitle {
   #stage-btn { display: none; }
 
   .side { gap: 6px; }
-  .side-header { margin: 0 8px; }
-  .side-label { font-size: 11px; }
+  .side-header {
+    margin: 0 8px;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+  .side-label { font-size: 11px; flex-shrink: 0; }
+  .side-hp { max-width: none; margin-left: 0; }
 
   .opp-portrait { width: 80px; height: 80px; }
   .opp-name-big { font-size: 18px; }
@@ -324,13 +347,15 @@ header .subtitle {
   /* 미니 스탯 — 한 줄, 얇게 */
   .side-footer {
     margin: 0 8px; padding: 4px 8px; gap: 10px;
-    justify-content: space-between;
+    justify-content: space-around;
   }
   .mini-stat .label { font-size: 9px; }
   .mini-stat .value { font-size: 15px; }
-  .mini-stat.next-mini { gap: 6px; margin-left: 0; }
   .next .mini-ball { width: 26px; height: 26px; font-size: 10px; }
-  .next { grid-template-columns: repeat(3, 26px); gap: 3px; }
+  .next { grid-template-columns: 26px; gap: 3px; }
+  /* NEXT 는 side-header 안에서 축소된 형태 */
+  .mini-stat.next-mini.next-top { padding: 2px 6px; margin-left: 6px; }
+  .mini-stat.next-mini.next-top .next .mini-ball { width: 26px; height: 26px; font-size: 10px; }
 
   /* 규칙 배너 — 좁게, 한글 이름 숨김 */
   .rule-banner {
@@ -346,8 +371,20 @@ header .subtitle {
   .duel-center .controls-hint { display: none; }
   .duel-center .stage-badge-center { font-size: 12px; }
 }
-/* 아주 좁은 화면(≤360px): 헤더 축소 */
+/* 아주 좁은 화면(≤360px): 헤더 축소 + 셀 여유 확보 (마법원 버튼 52px 반영) */
 @media (max-width: 360px) {
+  :root {
+    --cell: min(
+      36px,
+      calc((100vw - 150px) / 8),
+      calc((100vh - 220px) / 12)
+    );
+    --cell: min(
+      36px,
+      calc((100vw - 150px) / 8),
+      calc((100dvh - 220px) / 12)
+    );
+  }
   header h1 { font-size: 15px; }
   .hdr-icon-btn { width: 36px; height: 36px; font-size: 17px; }
   .mute-btn { width: 36px; height: 36px; }
@@ -360,54 +397,83 @@ body[data-hand="left"] .hand-toggle .hand-l { display: inline; }
 .hand-label { font-family: Georgia, serif; font-weight: 800; font-size: 15px; letter-spacing: 0.5px; }
 
 @media (hover: none) and (pointer: coarse), (max-width: 640px) {
-  /* 각 버튼은 화면 좌우 여백에 개별 fixed. 방향키는 필드 옆, ▼는 손잡이에 따라 오른/왼쪽. */
+  /* 각 버튼은 화면 좌우 여백에 개별 fixed. 마법원(연금술) 스타일. */
   .touchpad { display: contents; }
   .tp-btn {
     position: fixed;
     z-index: 60;
     -webkit-tap-highlight-color: transparent;
-    appearance: none; border: none; outline: none;
-    width: 44px; height: 84px;
+    appearance: none; outline: none;
+    width: 60px; height: 60px;
+    border-radius: 50%;
     font-size: 22px; font-weight: 800; line-height: 1;
-    color: #f2e8d0;
-    background: linear-gradient(180deg, rgba(46, 52, 78, 0.85), rgba(24, 28, 46, 0.9));
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 14px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 3px 8px rgba(0,0,0,0.55);
-    transition: transform 0.05s ease, background 0.1s ease;
-    cursor: pointer;
+    color: #ffd66b;
+    text-shadow: 0 0 8px rgba(255, 200, 100, 0.85), 0 1px 2px rgba(0,0,0,0.6);
+    background:
+      radial-gradient(circle at 30% 28%, rgba(255,230,170,0.35) 0%, rgba(255,230,170,0) 30%),
+      radial-gradient(circle at 50% 50%, rgba(58,42,21,0.9) 0%, rgba(20,12,4,0.95) 75%);
+    border: 2px solid rgba(255, 200, 100, 0.55);
+    box-shadow:
+      0 0 14px rgba(255, 200, 100, 0.28),
+      inset 0 0 10px rgba(255, 200, 100, 0.18),
+      0 4px 10px rgba(0,0,0,0.55);
     display: flex; align-items: center; justify-content: center;
+    transition: transform 0.08s ease, box-shadow 0.15s ease;
+    cursor: pointer;
     touch-action: manipulation;
     user-select: none;
     -webkit-user-select: none;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
   }
-  .tp-btn:active {
-    transform: translateY(1px) scale(0.96);
-    background: linear-gradient(180deg, rgba(24, 28, 46, 0.9), rgba(46, 52, 78, 0.85));
-    box-shadow: inset 0 2px 6px rgba(0,0,0,0.6);
+  /* 마법원 이중 링 */
+  .tp-btn::before {
+    content: "";
+    position: absolute; inset: 5px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 200, 100, 0.45);
+    pointer-events: none;
   }
-  /* 방향키: 좌우 여백 중앙쯤 (엄지 접근 편한 하단 40% 지점) */
-  .tp-left  { left: 4px;  bottom: calc(28% + env(safe-area-inset-bottom, 0px)); }
-  .tp-right { right: 4px; bottom: calc(28% + env(safe-area-inset-bottom, 0px)); }
-  /* ▼ 낙하: 기본 오른손 = 우측(▶ 위쪽에 스택), 왼손 모드는 좌측 */
+  .tp-btn::after {
+    content: "";
+    position: absolute; inset: 11px;
+    border-radius: 50%;
+    border: 1px dashed rgba(255, 200, 100, 0.35);
+    pointer-events: none;
+    animation: tp-ring-spin 12s linear infinite;
+  }
+  @keyframes tp-ring-spin {
+    to { transform: rotate(360deg); }
+  }
+  .tp-btn:active {
+    transform: scale(0.92);
+    box-shadow:
+      0 0 20px rgba(255, 200, 100, 0.55),
+      inset 0 0 14px rgba(255, 200, 100, 0.35),
+      0 2px 6px rgba(0,0,0,0.6);
+  }
+  .tp-btn:active::after { animation-duration: 3s; }
+
+  /* 방향키: 좌우 여백 하단 30~35% 지점 (엄지 자연 위치) */
+  .tp-left  { left: 6px;  bottom: calc(32% + env(safe-area-inset-bottom, 0px)); }
+  .tp-right { right: 6px; bottom: calc(32% + env(safe-area-inset-bottom, 0px)); }
+  /* ▼ 낙하: 좌우 방향키 바로 아래. 손잡이에 따라 좌/우 이동. */
   .tp-down {
-    right: 4px;
-    bottom: calc(28% + 92px + env(safe-area-inset-bottom, 0px));
-    background: linear-gradient(180deg, rgba(58, 66, 96, 0.9), rgba(30, 36, 58, 0.9));
+    right: 6px;
+    bottom: calc(32% - 70px + env(safe-area-inset-bottom, 0px));
+    color: #ffb45a;
   }
   body[data-hand="left"] .tp-down {
     right: auto;
-    left: 4px;
-    bottom: calc(28% + 92px + env(safe-area-inset-bottom, 0px));
+    left: 6px;
+    bottom: calc(32% - 70px + env(safe-area-inset-bottom, 0px));
   }
 }
-/* 좁은 화면: 버튼 축소 */
+/* 좁은 화면: 버튼 살짝 축소 */
 @media (max-width: 360px) {
-  .tp-btn { width: 38px; height: 72px; font-size: 18px; }
+  .tp-btn { width: 52px; height: 52px; font-size: 18px; }
   .tp-down, body[data-hand="left"] .tp-down {
-    bottom: calc(28% + 80px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(32% - 62px + env(safe-area-inset-bottom, 0px));
   }
 }
 

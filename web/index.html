@@ -31,6 +31,10 @@
       <div class="side-header">
         <div class="side-label">YOU · 플레이어</div>
         <div class="side-hp" id="player-hp"><span></span></div>
+        <div class="mini-stat next-mini next-top">
+          <span class="label">NEXT</span>
+          <div class="next" id="next"></div>
+        </div>
       </div>
       <div class="playfield">
         <div class="rule-banner" id="rule-banner"></div>
@@ -39,10 +43,6 @@
       <div class="side-footer">
         <div class="mini-stat"><span class="label">지혜</span><span class="value" id="score" data-role="score">0</span></div>
         <div class="mini-stat"><span class="label">연쇄</span><span class="value" id="chain" data-role="chain">0</span></div>
-        <div class="mini-stat next-mini">
-          <span class="label">다음</span>
-          <div class="next" id="next"></div>
-        </div>
       </div>
       <!-- 터치 조작 패드 (모바일/태블릿): 좌우 여백에 배치. ▼는 손잡이에 따라 이동 -->
       <div class="touchpad" id="touchpad" aria-label="터치 조작">
@@ -70,6 +70,10 @@
       <div class="side-header">
         <div class="side-label">FOE · <span id="opp-name">Zosimos</span></div>
         <div class="side-hp foe" id="opp-hp"><span></span></div>
+        <div class="mini-stat next-mini next-top">
+          <span class="label">NEXT</span>
+          <div class="next" id="opp-next"></div>
+        </div>
       </div>
       <div class="playfield opponent-playfield">
         <div class="rule-banner" id="opp-rule-banner"></div>
@@ -86,10 +90,6 @@
       <div class="side-footer">
         <div class="mini-stat"><span class="label">상대 지혜</span><span class="value" id="opp-score" data-role="score">0</span></div>
         <div class="mini-stat"><span class="label">상대 연쇄</span><span class="value" id="opp-chain" data-role="chain">0</span></div>
-        <div class="mini-stat next-mini">
-          <span class="label">상대 다음</span>
-          <div class="next" id="opp-next"></div>
-        </div>
       </div>
     </section>
   </div>
