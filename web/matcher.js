@@ -237,7 +237,7 @@ function findDiatomics(f, W, H, excluded = null) {
   return result;
 }
 
-// 규칙 4: 금속 원소 상하좌우 5개 이상 → 소거. (8열 필드 기준 콤보 유도용 상향)
+// 규칙 4: 같은 금속 원소 상하좌우 5개 이상 → 소거. (원소 종류가 같아야 함)
 function findMetalClusters(f, W, H, METAL_CAT) {
   const result = new Set();
   const visited = Array.from({ length: W }, () => new Array(H).fill(false));
@@ -245,6 +245,8 @@ function findMetalClusters(f, W, H, METAL_CAT) {
     if (visited[x][y]) continue;
     const e = f[x][y];
     if (!e || e.category !== METAL_CAT) { visited[x][y] = true; continue; }
+    // 같은 원소(key) 만 이어붙임 — 다른 금속은 이 컴포넌트에 속하지 않음
+    const key = e.key;
     const comp = [];
     const stack = [{ x, y }];
     while (stack.length) {
@@ -252,7 +254,7 @@ function findMetalClusters(f, W, H, METAL_CAT) {
       if (p.x < 0 || p.x >= W || p.y < 0 || p.y >= H) continue;
       if (visited[p.x][p.y]) continue;
       const ce = f[p.x][p.y];
-      if (!ce || ce.category !== METAL_CAT) continue;
+      if (!ce || ce.key !== key) continue;
       visited[p.x][p.y] = true;
       comp.push({ x: p.x, y: p.y });
       stack.push({ x: p.x + 1, y: p.y });

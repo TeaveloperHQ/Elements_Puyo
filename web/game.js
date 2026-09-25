@@ -690,26 +690,35 @@ class Game {
         this._spawnLabelPopup(c.x, c.y, `<span class="mp-formula">${group}족</span>`, "group");
       }
     }
-    // 금속: 연결 성분 별로 묶기 (BFS)
+    // 금속: 같은 원소(key)로 이어진 성분별로 묶기 (BFS)
     if (met && met.size > 0) {
       const remaining = new Set(met);
       while (remaining.size > 0) {
         const first = remaining.values().next().value;
+        const fx = Math.floor(first / HEIGHT), fy = first % HEIGHT;
+        const startE = f[fx][fy];
+        if (!startE) { remaining.delete(first); continue; }
+        const key = startE.key;
         const stack = [first];
         const cluster = [];
         while (stack.length) {
           const cur = stack.pop();
           if (!remaining.has(cur)) continue;
-          remaining.delete(cur);
           const cx = Math.floor(cur / HEIGHT), cy = cur % HEIGHT;
+          const ce = f[cx][cy];
+          if (!ce || ce.key !== key) continue;
+          remaining.delete(cur);
           cluster.push({ x: cx, y: cy });
           for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
             const nEnc = (cx + dx) * HEIGHT + (cy + dy);
             if (remaining.has(nEnc)) stack.push(nEnc);
           }
         }
+        if (cluster.length === 0) continue;
         const c = centroidPx(cluster);
-        this._spawnLabelPopup(c.x, c.y, `<span class="mp-formula">금속 결합</span>`, "metal");
+        const html = `<span class="mp-formula">${startE.symbol}<sub>${cluster.length}</sub> 금속</span>` +
+                     `<span class="mp-name">${startE.nameKr} 결합</span>`;
+        this._spawnLabelPopup(c.x, c.y, html, "metal");
       }
     }
   }
@@ -1197,9 +1206,12 @@ document.addEventListener("DOMContentLoaded", () => {
     downBtn.addEventListener("pointercancel", end);
     downBtn.addEventListener("pointerleave", end);
   }
-  const newBtn = document.getElementById("tp-new");
+  // 헤더의 "새 게임" 아이콘 버튼. 실수 방지를 위해 진행 중 게임에서는 확인 후 리셋.
+  const newBtn = document.getElementById("new-game-btn");
   if (newBtn) newBtn.addEventListener("click", () => {
     if (typeof audio !== "undefined") audio.unlock();
+    const alive = !player.state.gameOver && player.state.score > 0;
+    if (alive && !confirm("현재 게임을 종료하고 새로 시작할까요?")) return;
     onNewGameRequested();
   });
 });

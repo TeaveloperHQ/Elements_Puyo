@@ -248,6 +248,26 @@ header .subtitle {
   transform: translateY(-1px);
   box-shadow: 0 3px 10px rgba(255,200,100,0.25);
 }
+/* 헤더의 원형 아이콘 버튼 (새 게임 등) — 모바일에서도 눌리기 쉬운 크기 */
+.hdr-icon-btn {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 200, 100, 0.35);
+  background: linear-gradient(135deg, #3a2a15, #1e1408);
+  color: #ffd66b;
+  cursor: pointer;
+  font-size: 22px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  -webkit-tap-highlight-color: transparent;
+}
+.hdr-icon-btn:hover {
+  transform: scale(1.05);
+  border-color: rgba(255, 200, 100, 0.6);
+  box-shadow: 0 3px 12px rgba(255, 200, 100, 0.3);
+}
+.hdr-icon-btn:active { transform: scale(0.95); }
 
 /* 반응형: 좁은 화면 = 세로 스택 (상대 위, 플레이어 아래) */
 @media (max-width: 1100px) {
@@ -265,63 +285,88 @@ header .subtitle {
   .vs-badge { font-size: 32px; }
 }
 @media (max-width: 640px) {
-  :root { --cell: 32px; --gap: 4px; --pad: 6px; }
-  header h1 { font-size: 20px; }
+  :root { --cell: 34px; --gap: 4px; --pad: 6px; }
+  .app { padding: 8px; }
+  header { margin-bottom: 10px; gap: 8px; }
+  header h1 { font-size: 18px; }
   header .subtitle { display: none; }
+  .header-actions { gap: 6px; }
+  .hdr-btn { padding: 6px 10px; font-size: 12px; }
+  /* 스테이지 컷씬 재생 버튼: solo 에선 어차피 숨김. duel 모바일에서만 축소. */
+  #stage-btn { display: none; }
+
   .opp-portrait { width: 80px; height: 80px; }
   .opp-name-big { font-size: 18px; }
-  .side-footer { padding: 6px 8px; gap: 8px; }
-  .mini-stat .value { font-size: 15px; }
+
+  /* 미니 스탯 (지혜/연쇄/다음) — 한 줄로 컴팩트하게 */
+  .side-footer {
+    padding: 6px 8px; gap: 10px;
+    justify-content: space-between;
+  }
+  .mini-stat .label { font-size: 9px; }
+  .mini-stat .value { font-size: 16px; }
+  .mini-stat.next-mini { gap: 6px; margin-left: 0; }
+  .next .mini-ball { width: 30px; height: 30px; font-size: 10px; }
+  .next { grid-template-columns: repeat(3, 30px); gap: 3px; }
+
+  /* 규칙 배너 — 좁게, 형광 이름은 숨김 */
+  .rule-banner { font-size: 12px; padding: 4px 8px; min-height: 26px; gap: 6px; }
+  .rule-banner .name-kr { display: none; }
+  .rule-banner .chain-tag { font-size: 10px; padding: 1px 6px; }
+  .rule-banner .rule-tag { font-size: 11px; padding: 2px 6px; }
+
   /* 모바일에서 덜 필요한 UI 정리 */
   .sidebar.bottom-bar { display: none; }
   .duel-center .controls-hint { display: none; }
   .duel-center .stage-badge-center { font-size: 12px; }
-  .app { padding: 8px; }
 }
-/* 터치 조작 패드 — 기본 숨김. 터치 지원 기기에서만 노출 */
+/* 아주 좁은 화면(320px 미만): 셀 축소로 필드 넘침 방지 */
+@media (max-width: 360px) {
+  :root { --cell: 30px; --gap: 3px; --pad: 5px; }
+  header h1 { font-size: 16px; }
+  .hdr-icon-btn { width: 38px; height: 38px; font-size: 18px; }
+  .mute-btn { width: 38px; height: 38px; }
+}
+/* 터치 조작 패드 — 기본 숨김. 터치 지원 기기 또는 좁은 화면에서 노출 */
 .touchpad { display: none; }
-@media (hover: none) and (pointer: coarse) {
+@media (hover: none) and (pointer: coarse), (max-width: 640px) {
   .touchpad {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: auto auto;
-    gap: 8px;
+    gap: 10px;
     width: 100%;
     align-self: stretch;
-    margin-top: 10px;
-    padding: 8px;
-    background: rgba(20, 22, 34, 0.7);
-    border-radius: 14px;
-    border: 1px solid rgba(255,255,255,0.06);
+    margin-top: 12px;
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: rgba(20, 22, 34, 0.75);
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
     touch-action: manipulation;
     user-select: none;
     -webkit-user-select: none;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.4);
   }
   .tp-btn {
     -webkit-tap-highlight-color: transparent;
     appearance: none; border: none; outline: none;
-    padding: 14px 0;
-    font-size: 22px; font-weight: 800;
+    /* 엄지로 편하게 누를 수 있도록 큼직하게 */
+    min-height: 64px;
+    padding: 18px 0;
+    font-size: 28px; font-weight: 800;
     color: #f2e8d0;
     background: linear-gradient(180deg, #2a2f45, #1a1e2f);
-    border-radius: 10px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 2px 6px rgba(0,0,0,0.5);
+    border-radius: 14px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 3px 8px rgba(0,0,0,0.55);
     transition: transform 0.05s ease, background 0.1s ease;
+    cursor: pointer;
   }
   .tp-btn:active {
     transform: translateY(1px) scale(0.97);
     background: linear-gradient(180deg, #1a1e2f, #2a2f45);
     box-shadow: inset 0 2px 6px rgba(0,0,0,0.6);
   }
-  .tp-new {
-    grid-column: 1 / -1;
-    font-size: 15px; letter-spacing: 0.5px;
-    color: #1e1408;
-    background: linear-gradient(180deg, #ffd88a, #d4a05a);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 2px 6px rgba(0,0,0,0.4);
-  }
-  .tp-new:active {
-    background: linear-gradient(180deg, #d4a05a, #ffd88a);
+  .tp-down {
+    background: linear-gradient(180deg, #3a3f5a, #22273c);
   }
   /* 터치 기기: 데스크톱 대비 여백/사이드바 축소 */
   .sidebar.bottom-bar { display: none; }
