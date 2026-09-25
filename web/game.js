@@ -1167,6 +1167,41 @@ document.addEventListener("DOMContentLoaded", () => {
     const rIdx = Math.min(player.state.level - 1, ALCHEMIST_RANKS.length - 1);
     if (typeof showStageIntro === "function") showStageIntro(rIdx, null);
   });
+
+  // 터치 조작 패드 바인딩. 이동은 tap, ▼는 hold-to-softdrop.
+  const bindMove = (id, delta) => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    const fire = (ev) => {
+      ev.preventDefault();
+      if (typeof audio !== "undefined") audio.unlock();
+      player.tryMove(delta);
+    };
+    btn.addEventListener("pointerdown", fire);
+  };
+  bindMove("tp-left", -1);
+  bindMove("tp-right", +1);
+  const downBtn = document.getElementById("tp-down");
+  if (downBtn) {
+    const start = (ev) => {
+      ev.preventDefault();
+      if (typeof audio !== "undefined") audio.unlock();
+      player.softDrop(true);
+    };
+    const end = (ev) => {
+      ev.preventDefault();
+      player.softDrop(false);
+    };
+    downBtn.addEventListener("pointerdown", start);
+    downBtn.addEventListener("pointerup", end);
+    downBtn.addEventListener("pointercancel", end);
+    downBtn.addEventListener("pointerleave", end);
+  }
+  const newBtn = document.getElementById("tp-new");
+  if (newBtn) newBtn.addEventListener("click", () => {
+    if (typeof audio !== "undefined") audio.unlock();
+    onNewGameRequested();
+  });
 });
 
 // 스토리 인트로 → 게임 시작
