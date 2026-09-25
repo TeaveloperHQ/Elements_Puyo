@@ -330,47 +330,71 @@ header .subtitle {
 /* 터치 조작 패드 — 기본 숨김. 터치 지원 기기 또는 좁은 화면에서 노출 */
 .touchpad { display: none; }
 @media (hover: none) and (pointer: coarse), (max-width: 640px) {
+  /* 화면 좌우 하단 코너에 두 뭉치로 배치. 필드 flow 를 밀지 않도록 fixed. */
   .touchpad {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 10px;
-    width: 100%;
-    align-self: stretch;
-    margin-top: 12px;
-    padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
-    background: rgba(20, 22, 34, 0.75);
-    border-radius: 16px;
-    border: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+    z-index: 50;
+    pointer-events: none;  /* 컨테이너는 통과, 버튼만 잡음 */
     touch-action: manipulation;
     user-select: none;
     -webkit-user-select: none;
-    box-shadow: 0 -4px 16px rgba(0,0,0,0.4);
+  }
+  .tp-side {
+    display: flex; flex-direction: column;
+    gap: 10px;
+    pointer-events: auto;
+    background: rgba(20, 22, 34, 0.55);
+    padding: 8px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.06);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.45);
   }
   .tp-btn {
     -webkit-tap-highlight-color: transparent;
     appearance: none; border: none; outline: none;
     /* 엄지로 편하게 누를 수 있도록 큼직하게 */
-    min-height: 64px;
-    padding: 18px 0;
-    font-size: 28px; font-weight: 800;
+    width: 72px; height: 60px;
+    font-size: 28px; font-weight: 800; line-height: 1;
     color: #f2e8d0;
     background: linear-gradient(180deg, #2a2f45, #1a1e2f);
     border-radius: 14px;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 3px 8px rgba(0,0,0,0.55);
     transition: transform 0.05s ease, background 0.1s ease;
     cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
   }
   .tp-btn:active {
     transform: translateY(1px) scale(0.97);
     background: linear-gradient(180deg, #1a1e2f, #2a2f45);
     box-shadow: inset 0 2px 6px rgba(0,0,0,0.6);
   }
-  .tp-down {
+  .tp-down-btn {
     background: linear-gradient(180deg, #3a3f5a, #22273c);
   }
+  /* 필드 하단이 fixed 터치패드에 가리지 않도록 여유 확보 */
+  .player-side { padding-bottom: 150px; }
   /* 터치 기기: 데스크톱 대비 여백/사이드바 축소 */
   .sidebar.bottom-bar { display: none; }
   .duel-center .controls-hint { display: none; }
+}
+/* 좁은 화면: 버튼 살짝 축소 */
+@media (max-width: 360px) {
+  .tp-btn { width: 62px; height: 54px; font-size: 24px; }
+  .tp-side { padding: 6px; gap: 8px; }
+  .player-side { padding-bottom: 138px; }
+}
+/* 좁고 세로가 짧은 landscape 폰: 버튼 압축 */
+@media (max-height: 500px) and (orientation: landscape) {
+  .tp-btn { width: 56px; height: 44px; font-size: 20px; }
+  .tp-side { gap: 6px; padding: 6px; }
+  .player-side { padding-bottom: 110px; }
 }
 
 /* ── 필드 컨테이너: 절대위치 볼들의 부모 ─────────────────────────── */

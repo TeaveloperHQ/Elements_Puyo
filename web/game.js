@@ -1190,21 +1190,27 @@ document.addEventListener("DOMContentLoaded", () => {
   };
   bindMove("tp-left", -1);
   bindMove("tp-right", +1);
-  const downBtn = document.getElementById("tp-down");
-  if (downBtn) {
-    const start = (ev) => {
-      ev.preventDefault();
-      if (typeof audio !== "undefined") audio.unlock();
-      player.softDrop(true);
-    };
-    const end = (ev) => {
-      ev.preventDefault();
-      player.softDrop(false);
-    };
-    downBtn.addEventListener("pointerdown", start);
-    downBtn.addEventListener("pointerup", end);
-    downBtn.addEventListener("pointercancel", end);
-    downBtn.addEventListener("pointerleave", end);
+  // ▼ 은 좌우 두 손 어느 쪽으로도 누를 수 있도록 두 개 바인딩. 하나가 눌린 동안
+  // 다른 하나가 떨어져도 softDrop 이 유지되도록 active 카운터로 관리.
+  let dropActive = 0;
+  const startDrop = (ev) => {
+    ev.preventDefault();
+    if (typeof audio !== "undefined") audio.unlock();
+    dropActive++;
+    player.softDrop(true);
+  };
+  const endDrop = (ev) => {
+    ev.preventDefault();
+    dropActive = Math.max(0, dropActive - 1);
+    if (dropActive === 0) player.softDrop(false);
+  };
+  for (const id of ["tp-down-l", "tp-down-r"]) {
+    const btn = document.getElementById(id);
+    if (!btn) continue;
+    btn.addEventListener("pointerdown", startDrop);
+    btn.addEventListener("pointerup", endDrop);
+    btn.addEventListener("pointercancel", endDrop);
+    btn.addEventListener("pointerleave", endDrop);
   }
   // 헤더의 "새 게임" 아이콘 버튼. 실수 방지를 위해 진행 중 게임에서는 확인 후 리셋.
   const newBtn = document.getElementById("new-game-btn");

@@ -40,11 +40,16 @@
           <div class="next" id="next"></div>
         </div>
       </div>
-      <!-- 터치 조작 패드 (모바일/터치 기기에서만 표시) -->
+      <!-- 터치 조작 패드 (모바일/태블릿): 좌우 코너에 방향키·낙하 -->
       <div class="touchpad" id="touchpad" aria-label="터치 조작">
-        <button class="tp-btn tp-left"  id="tp-left"  aria-label="왼쪽으로">◀</button>
-        <button class="tp-btn tp-down"  id="tp-down"  aria-label="빠른 낙하">▼</button>
-        <button class="tp-btn tp-right" id="tp-right" aria-label="오른쪽으로">▶</button>
+        <div class="tp-side tp-side-left">
+          <button class="tp-btn tp-arrow"    id="tp-left"    aria-label="왼쪽으로">◀</button>
+          <button class="tp-btn tp-down-btn" id="tp-down-l"  aria-label="빠른 낙하">▼</button>
+        </div>
+        <div class="tp-side tp-side-right">
+          <button class="tp-btn tp-arrow"    id="tp-right"   aria-label="오른쪽으로">▶</button>
+          <button class="tp-btn tp-down-btn" id="tp-down-r"  aria-label="빠른 낙하">▼</button>
+        </div>
       </div>
     </section>
 
