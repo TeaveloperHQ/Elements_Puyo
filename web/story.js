@@ -110,17 +110,20 @@ function showStoryIntro(onDone) {
     </div>`;
   document.body.appendChild(overlay);
   const cta = overlay.querySelector(".story-cta");
+  let closed = false;
+  const kh = (e) => {
+    if (["Enter", " ", "ArrowDown", "n", "N"].includes(e.key)) {
+      e.preventDefault(); close();
+    }
+  };
   const close = () => {
+    if (closed) return;
+    closed = true;
+    document.removeEventListener("keydown", kh, true);
     overlay.classList.add("fading");
     setTimeout(() => { overlay.remove(); onDone && onDone(); }, 400);
   };
   cta.addEventListener("click", close);
-  // 방향키·엔터·스페이스로도 진행
-  const kh = (e) => {
-    if (["Enter", " ", "ArrowDown", "n", "N"].includes(e.key)) {
-      e.preventDefault(); close(); document.removeEventListener("keydown", kh, true);
-    }
-  };
   document.addEventListener("keydown", kh, true);
 }
 
@@ -143,16 +146,20 @@ function showStageIntro(stageIndex, onDone) {
     </div>`;
   document.body.appendChild(el);
   const cta = el.querySelector(".stage-cta");
+  let closed = false;
+  const kh = (e) => {
+    if (["Enter", " ", "ArrowDown"].includes(e.key)) {
+      e.preventDefault(); close();
+    }
+  };
   const close = () => {
+    if (closed) return;
+    closed = true;
+    document.removeEventListener("keydown", kh, true);
     el.classList.add("fading");
     setTimeout(() => { el.remove(); onDone && onDone(); }, 350);
   };
   cta.addEventListener("click", close);
-  const kh = (e) => {
-    if (["Enter", " ", "ArrowDown"].includes(e.key)) {
-      e.preventDefault(); close(); document.removeEventListener("keydown", kh, true);
-    }
-  };
   document.addEventListener("keydown", kh, true);
 }
 
@@ -175,15 +182,19 @@ function showStageResult(stageIndex, playerWon, onDone) {
     </div>`;
   document.body.appendChild(el);
   const cta = el.querySelector(".stage-cta");
+  let closed = false;
+  const kh = (e) => {
+    if (["Enter", " ", "ArrowDown"].includes(e.key)) {
+      e.preventDefault(); close();
+    }
+  };
   const close = () => {
+    if (closed) return;
+    closed = true;
+    document.removeEventListener("keydown", kh, true);
     el.classList.add("fading");
     setTimeout(() => { el.remove(); onDone && onDone(); }, 350);
   };
   cta.addEventListener("click", close);
-  const kh = (e) => {
-    if (["Enter", " ", "ArrowDown"].includes(e.key)) {
-      e.preventDefault(); close(); document.removeEventListener("keydown", kh, true);
-    }
-  };
   document.addEventListener("keydown", kh, true);
 }

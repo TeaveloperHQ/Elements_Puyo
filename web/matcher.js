@@ -166,7 +166,7 @@ function findMolecules(f, W, H, isNobleFn, isObstacleFn) {
   return { cells: claimedCells, subsets: selected };
 }
 
-// 규칙 2: 같은 주기(1/2/3) 가로 3개 이상 서로 다른 원소
+// 규칙 2: 같은 주기(1/2/3) 가로 5개 이상 서로 다른 원소 — 8열 필드 기준 콤보 유도용 상향
 function findPeriodRuns(f, W, H, isObstacleFn) {
   const result = new Set();
   for (let y = 0; y < H; y++) {
@@ -180,7 +180,7 @@ function findPeriodRuns(f, W, H, isObstacleFn) {
         if (seen.has(e.key)) break;
         seen.add(e.key); end++;
       }
-      if (seen.size >= 3) for (let x = start; x < end; x++) result.add(x * H + y);
+      if (seen.size >= 5) for (let x = start; x < end; x++) result.add(x * H + y);
     }
   }
   return result;
@@ -237,7 +237,7 @@ function findDiatomics(f, W, H, excluded = null) {
   return result;
 }
 
-// 규칙 4: 금속 원소 상하좌우 4개 이상 → 소거.
+// 규칙 4: 금속 원소 상하좌우 5개 이상 → 소거. (8열 필드 기준 콤보 유도용 상향)
 function findMetalClusters(f, W, H, METAL_CAT) {
   const result = new Set();
   const visited = Array.from({ length: W }, () => new Array(H).fill(false));
@@ -260,7 +260,7 @@ function findMetalClusters(f, W, H, METAL_CAT) {
       stack.push({ x: p.x, y: p.y + 1 });
       stack.push({ x: p.x, y: p.y - 1 });
     }
-    if (comp.length >= 4) {
+    if (comp.length >= 5) {
       for (const c of comp) result.add(c.x * H + c.y);
     }
   }

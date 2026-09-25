@@ -369,6 +369,7 @@ class Game {
         else if (per.has(enc)) b.dom.classList.add("match-period");
         else if (mol.has(enc)) b.dom.classList.add("match-molecule");
       }
+      this._spawnMatchLabels(f, molResult.subsets, per, grp, met, dia);
       await sleep(280);
 
       for (const p of positions) {
@@ -599,6 +600,134 @@ class Game {
       this.playfieldEl.appendChild(p);
       setTimeout(() => p.remove(), 720);
     }
+  }
+
+  // 소거 순간, 각 규칙 클러스터 중심에 이름 팝업 (분자식·N주기·N족·이원자·금속 결합)
+  _spawnMatchLabels(f, molSubsets, per, grp, met, dia) {
+    if (!this.playfieldEl || !this.fieldEl) return;
+    const centroidPx = (cells) => {
+      let sx = 0, sy = 0;
+      for (const c of cells) { const p = ballPx(c.x, c.y); sx += p.x + CELL/2; sy += p.y + CELL/2; }
+      return { x: sx / cells.length, y: sy / cells.length };
+    };
+    // 분자: subset 별 — 6망성 마법진 + 화학식 (오래 잔상)
+    for (const sub of molSubsets) {
+      const cells = [];
+      for (const cid of sub.cellIds) cells.push({ x: Math.floor(cid / HEIGHT), y: cid % HEIGHT });
+      const c = centroidPx(cells);
+      // 6망성 (두 개의 삼각형 겹침, 정육각형에 내접)
+      const hex = `
+        <svg class="mp-hexagram" viewBox="0 0 100 100" width="150" height="150" aria-hidden="true">
+          <defs>
+            <filter id="mp-glow"><feGaussianBlur stdDeviation="1.4"/></filter>
+          </defs>
+          <g class="mp-hex-ring" stroke="rgba(255,205,110,0.9)" stroke-width="1.1" fill="none" filter="url(#mp-glow)">
+            <circle cx="50" cy="50" r="46"/>
+            <circle cx="50" cy="50" r="34" stroke-dasharray="2 3" opacity="0.75"/>
+          </g>
+          <g class="mp-hex-up"   stroke="rgba(255,220,140,0.95)" stroke-width="1.4" fill="rgba(255,190,80,0.06)" filter="url(#mp-glow)">
+            <polygon points="50,10 87,72 13,72"/>
+          </g>
+          <g class="mp-hex-down" stroke="rgba(255,235,180,0.95)" stroke-width="1.4" fill="rgba(255,220,120,0.06)" filter="url(#mp-glow)">
+            <polygon points="50,90 13,28 87,28"/>
+          </g>
+          <g fill="rgba(255,235,170,0.95)">
+            <circle cx="50" cy="10" r="1.6"/><circle cx="87" cy="72" r="1.6"/><circle cx="13" cy="72" r="1.6"/>
+            <circle cx="50" cy="90" r="1.6"/><circle cx="13" cy="28" r="1.6"/><circle cx="87" cy="28" r="1.6"/>
+          </g>
+        </svg>`;
+      const html = hex +
+                   `<span class="mp-formula">${sub.formula}</span>` +
+                   (sub.nameKr ? `<span class="mp-name">${sub.nameKr}</span>` : "");
+      this._spawnLabelPopup(c.x, c.y, html, "molecule");
+    }
+    // 이원자: 같은 원소 key 별로 묶기
+    if (dia && dia.size > 0) {
+      const groups = new Map();  // key -> [cells]
+      for (const enc of dia) {
+        const x = Math.floor(enc / HEIGHT), y = enc % HEIGHT;
+        const e = f[x][y]; if (!e) continue;
+        if (!groups.has(e.key)) groups.set(e.key, []);
+        groups.get(e.key).push({ x, y, e });
+      }
+      for (const cells of groups.values()) {
+        const c = centroidPx(cells);
+        const sym = cells[0].e.symbol;
+        const nameMap = { H: "수소 기체", N: "질소 기체", O: "산소 기체", F: "플루오린 기체", CL: "염소 기체" };
+        const nameKr = nameMap[cells[0].e.key] || "";
+        const html = `<span class="mp-formula">${sym}<sub>2</sub></span>` +
+                     (nameKr ? `<span class="mp-name">${nameKr}</span>` : "");
+        this._spawnLabelPopup(c.x, c.y, html, "diatomic");
+      }
+    }
+    // 주기: 행별로 묶기 (같은 주기가 연속되는 구간)
+    if (per && per.size > 0) {
+      const byRow = new Map();  // y -> [{x,e}]
+      for (const enc of per) {
+        const x = Math.floor(enc / HEIGHT), y = enc % HEIGHT;
+        const e = f[x][y]; if (!e) continue;
+        if (!byRow.has(y)) byRow.set(y, []);
+        byRow.get(y).push({ x, y, e });
+      }
+      for (const cells of byRow.values()) {
+        const c = centroidPx(cells);
+        const period = cells[0].e.period;
+        this._spawnLabelPopup(c.x, c.y, `<span class="mp-formula">${period}주기</span>`, "period");
+      }
+    }
+    // 족: 열별로 묶기
+    if (grp && grp.size > 0) {
+      const byCol = new Map();  // x -> [{y,e}]
+      for (const enc of grp) {
+        const x = Math.floor(enc / HEIGHT), y = enc % HEIGHT;
+        const e = f[x][y]; if (!e) continue;
+        if (!byCol.has(x)) byCol.set(x, []);
+        byCol.get(x).push({ x, y, e });
+      }
+      for (const cells of byCol.values()) {
+        const c = centroidPx(cells);
+        const group = cells[0].e.group;
+        this._spawnLabelPopup(c.x, c.y, `<span class="mp-formula">${group}족</span>`, "group");
+      }
+    }
+    // 금속: 연결 성분 별로 묶기 (BFS)
+    if (met && met.size > 0) {
+      const remaining = new Set(met);
+      while (remaining.size > 0) {
+        const first = remaining.values().next().value;
+        const stack = [first];
+        const cluster = [];
+        while (stack.length) {
+          const cur = stack.pop();
+          if (!remaining.has(cur)) continue;
+          remaining.delete(cur);
+          const cx = Math.floor(cur / HEIGHT), cy = cur % HEIGHT;
+          cluster.push({ x: cx, y: cy });
+          for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+            const nEnc = (cx + dx) * HEIGHT + (cy + dy);
+            if (remaining.has(nEnc)) stack.push(nEnc);
+          }
+        }
+        const c = centroidPx(cluster);
+        this._spawnLabelPopup(c.x, c.y, `<span class="mp-formula">금속 결합</span>`, "metal");
+      }
+    }
+  }
+
+  _spawnLabelPopup(cx, cy, html, cls) {
+    const wrapRect = this.fieldEl.getBoundingClientRect();
+    const playRect = this.playfieldEl.getBoundingClientRect();
+    const offsetTop = wrapRect.top - playRect.top;
+    const offsetLeft = wrapRect.left - playRect.left;
+    const el = document.createElement("div");
+    el.className = "match-popup match-popup-" + cls;
+    el.innerHTML = html;
+    el.style.left = (offsetLeft + cx) + "px";
+    el.style.top  = (offsetTop  + cy) + "px";
+    this.playfieldEl.appendChild(el);
+    // 분자는 인식 시간을 주기 위해 오래 잔상, 나머지는 짧게
+    const lifetime = cls === "molecule" ? 2600 : 1300;
+    setTimeout(() => el.remove(), lifetime);
   }
 
   _showScorePopup(amount, positions, isBig) {
