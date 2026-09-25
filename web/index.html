@@ -12,6 +12,10 @@
     <h1>⚗️ 원소 연금술사 <span class="subtitle">Elements Alchemist</span></h1>
     <div class="header-actions">
       <button id="new-game-btn" class="hdr-icon-btn" title="새 게임" aria-label="새 게임">↻</button>
+      <button id="hand-toggle" class="hdr-icon-btn hand-toggle" title="손잡이 전환 (오른손/왼손)" aria-label="손잡이 전환">
+        <span class="hand-label hand-r">R</span>
+        <span class="hand-label hand-l">L</span>
+      </button>
       <button id="stage-btn" class="hdr-btn" title="스테이지 컷씬 보기">📜 스테이지</button>
       <button id="mute-toggle" class="mute-btn" data-state="on" title="소리 켜짐">
         <span class="ico-on">🔊</span>
@@ -40,16 +44,11 @@
           <div class="next" id="next"></div>
         </div>
       </div>
-      <!-- 터치 조작 패드 (모바일/태블릿): 좌우 코너에 방향키·낙하 -->
+      <!-- 터치 조작 패드 (모바일/태블릿): 좌우 여백에 배치. ▼는 손잡이에 따라 이동 -->
       <div class="touchpad" id="touchpad" aria-label="터치 조작">
-        <div class="tp-side tp-side-left">
-          <button class="tp-btn tp-arrow"    id="tp-left"    aria-label="왼쪽으로">◀</button>
-          <button class="tp-btn tp-down-btn" id="tp-down-l"  aria-label="빠른 낙하">▼</button>
-        </div>
-        <div class="tp-side tp-side-right">
-          <button class="tp-btn tp-arrow"    id="tp-right"   aria-label="오른쪽으로">▶</button>
-          <button class="tp-btn tp-down-btn" id="tp-down-r"  aria-label="빠른 낙하">▼</button>
-        </div>
+        <button class="tp-btn tp-left"  id="tp-left"  aria-label="왼쪽으로">◀</button>
+        <button class="tp-btn tp-right" id="tp-right" aria-label="오른쪽으로">▶</button>
+        <button class="tp-btn tp-down"  id="tp-down"  aria-label="빠른 낙하">▼</button>
       </div>
     </section>
 

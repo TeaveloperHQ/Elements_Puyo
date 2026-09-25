@@ -54,16 +54,34 @@ function labelHTML(e) {
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// 렌더 상수 (CSS 와 동기화)
+// 렌더 상수. CSS `--cell / --gap / --pad` 이 뷰포트에 따라 동적으로 계산
+// 되므로 여기서도 실측값을 사용. measureFieldDims() 로 갱신.
 // ══════════════════════════════════════════════════════════════════════
-const CELL = 56, GAP = 8, PAD = 10;
-const CELL_STEP = CELL + GAP;
+let CELL = 56, GAP = 8, PAD = 10;
+let CELL_STEP = CELL + GAP;
 const WIDTH = 8, HEIGHT = 12;
 function ballPx(gridX, y) {
   return {
     x: PAD + gridX * CELL_STEP,
     y: PAD + (HEIGHT - 1 - y) * CELL_STEP,
   };
+}
+// CSS 변수 (--cell 등) 는 min()/calc() 표현식이라 getComputedStyle 만으론
+// 실제 px 값을 얻기 어렵다. 임시 프로브 요소를 넣고 렌더된 크기를 읽어옴.
+function measureFieldDims() {
+  const probe = document.createElement("div");
+  probe.style.cssText = "position:absolute; visibility:hidden; pointer-events:none; top:0; left:0;";
+  probe.innerHTML =
+    '<div style="width: var(--cell); height: var(--cell)"></div>' +
+    '<div style="width: var(--gap);  height: var(--gap)"></div>'  +
+    '<div style="width: var(--pad);  height: var(--pad)"></div>';
+  document.body.appendChild(probe);
+  const cells = probe.children;
+  CELL = cells[0].getBoundingClientRect().width || CELL;
+  GAP  = cells[1].getBoundingClientRect().width || GAP;
+  PAD  = cells[2].getBoundingClientRect().width || PAD;
+  probe.remove();
+  CELL_STEP = CELL + GAP;
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1190,28 +1208,36 @@ document.addEventListener("DOMContentLoaded", () => {
   };
   bindMove("tp-left", -1);
   bindMove("tp-right", +1);
-  // ▼ 은 좌우 두 손 어느 쪽으로도 누를 수 있도록 두 개 바인딩. 하나가 눌린 동안
-  // 다른 하나가 떨어져도 softDrop 이 유지되도록 active 카운터로 관리.
-  let dropActive = 0;
-  const startDrop = (ev) => {
-    ev.preventDefault();
-    if (typeof audio !== "undefined") audio.unlock();
-    dropActive++;
-    player.softDrop(true);
-  };
-  const endDrop = (ev) => {
-    ev.preventDefault();
-    dropActive = Math.max(0, dropActive - 1);
-    if (dropActive === 0) player.softDrop(false);
-  };
-  for (const id of ["tp-down-l", "tp-down-r"]) {
-    const btn = document.getElementById(id);
-    if (!btn) continue;
-    btn.addEventListener("pointerdown", startDrop);
-    btn.addEventListener("pointerup", endDrop);
-    btn.addEventListener("pointercancel", endDrop);
-    btn.addEventListener("pointerleave", endDrop);
+  const downBtn = document.getElementById("tp-down");
+  if (downBtn) {
+    const start = (ev) => {
+      ev.preventDefault();
+      if (typeof audio !== "undefined") audio.unlock();
+      player.softDrop(true);
+    };
+    const end = (ev) => {
+      ev.preventDefault();
+      player.softDrop(false);
+    };
+    downBtn.addEventListener("pointerdown", start);
+    downBtn.addEventListener("pointerup", end);
+    downBtn.addEventListener("pointercancel", end);
+    downBtn.addEventListener("pointerleave", end);
   }
+
+  // 손잡이 (오른손/왼손) 전환 — ▼ 버튼 위치를 좌우로 이동. 기본 오른손.
+  const HAND_KEY = "elements_puyo_hand";
+  const setHand = (h) => {
+    document.body.setAttribute("data-hand", h);
+    try { localStorage.setItem(HAND_KEY, h); } catch {}
+  };
+  let hand = "right";
+  try { const v = localStorage.getItem(HAND_KEY); if (v === "left") hand = "left"; } catch {}
+  setHand(hand);
+  const handBtn = document.getElementById("hand-toggle");
+  if (handBtn) handBtn.addEventListener("click", () => {
+    setHand(document.body.getAttribute("data-hand") === "left" ? "right" : "left");
+  });
   // 헤더의 "새 게임" 아이콘 버튼. 실수 방지를 위해 진행 중 게임에서는 확인 후 리셋.
   const newBtn = document.getElementById("new-game-btn");
   if (newBtn) newBtn.addEventListener("click", () => {
@@ -1230,10 +1256,29 @@ const progress = (typeof loadProgress === "function") ? loadProgress() : { seenI
 currentStage = Math.min(Math.max(1, progress.current || 1), ALCHEMIST_RANKS.length);
 
 function bootGame() {
+  measureFieldDims();
   newGame();
   lastTime = performance.now();
   requestAnimationFrame(tick);
 }
+
+// 뷰포트 크기 변경 → 셀 크기 재측정 후 모든 볼 재배치. 낙하 중 조각도 같이.
+let _resizeRaf = 0;
+function _reflowAllBalls() {
+  measureFieldDims();
+  for (const g of [player, opponent]) {
+    if (!g) continue;
+    for (const b of g.balls.values()) b.updateDom();
+    if (g.state.fallingBall) g.state.fallingBall.updateDom();
+  }
+}
+window.addEventListener("resize", () => {
+  cancelAnimationFrame(_resizeRaf);
+  _resizeRaf = requestAnimationFrame(_reflowAllBalls);
+});
+window.addEventListener("orientationchange", () => {
+  setTimeout(_reflowAllBalls, 200);
+});
 // 스토리 인트로 (첫 플레이 시 시공간의 균열 컷씬 → 스테이지 1 컷씬)
 if (!progress.seenIntro && typeof showStoryIntro === "function") {
   showStoryIntro(() => {
