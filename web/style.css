@@ -408,15 +408,17 @@ body[data-hand="left"] .hand-toggle .hand-l { display: inline; }
     border-radius: 50%;
     font-size: 22px; font-weight: 800; line-height: 1;
     color: #ffd66b;
-    text-shadow: 0 0 8px rgba(255, 200, 100, 0.85), 0 1px 2px rgba(0,0,0,0.6);
+    text-shadow: 0 0 10px rgba(255, 200, 100, 0.95), 0 1px 2px rgba(0,0,0,0.7);
+    /* 배경 겹침: 육망성 SVG → 얼룩 하이라이트 → 어두운 코어 */
     background:
-      radial-gradient(circle at 30% 28%, rgba(255,230,170,0.35) 0%, rgba(255,230,170,0) 30%),
-      radial-gradient(circle at 50% 50%, rgba(58,42,21,0.9) 0%, rgba(20,12,4,0.95) 75%);
-    border: 2px solid rgba(255, 200, 100, 0.55);
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none' stroke='rgba(255,205,120,0.55)' stroke-width='0.7'><circle cx='32' cy='32' r='24'/><polygon points='32,12 49,42 15,42'/><polygon points='32,52 15,22 49,22'/><circle cx='32' cy='32' r='3.5' fill='rgba(255,205,120,0.35)' stroke='none'/></svg>") center/86% no-repeat,
+      radial-gradient(circle at 30% 26%, rgba(255,235,180,0.4) 0%, rgba(255,235,180,0) 32%),
+      radial-gradient(circle at 50% 50%, rgba(70,50,22,0.9) 0%, rgba(16,10,4,0.98) 78%);
+    border: 2px solid rgba(255, 200, 100, 0.65);
     box-shadow:
-      0 0 14px rgba(255, 200, 100, 0.28),
-      inset 0 0 10px rgba(255, 200, 100, 0.18),
-      0 4px 10px rgba(0,0,0,0.55);
+      0 0 18px rgba(255, 200, 100, 0.35),
+      inset 0 0 14px rgba(255, 200, 100, 0.22),
+      0 4px 12px rgba(0,0,0,0.6);
     display: flex; align-items: center; justify-content: center;
     transition: transform 0.08s ease, box-shadow 0.15s ease;
     cursor: pointer;
@@ -426,21 +428,22 @@ body[data-hand="left"] .hand-toggle .hand-l { display: inline; }
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
   }
-  /* 마법원 이중 링 */
+  /* 마법원 외곽 링 (정적) */
   .tp-btn::before {
     content: "";
-    position: absolute; inset: 5px;
+    position: absolute; inset: 4px;
     border-radius: 50%;
-    border: 1px solid rgba(255, 200, 100, 0.45);
+    border: 1px solid rgba(255, 205, 120, 0.5);
     pointer-events: none;
   }
+  /* 회전하는 룬 링 (점선) */
   .tp-btn::after {
     content: "";
-    position: absolute; inset: 11px;
+    position: absolute; inset: 10px;
     border-radius: 50%;
-    border: 1px dashed rgba(255, 200, 100, 0.35);
+    border: 1px dashed rgba(255, 220, 140, 0.55);
     pointer-events: none;
-    animation: tp-ring-spin 12s linear infinite;
+    animation: tp-ring-spin 10s linear infinite;
   }
   @keyframes tp-ring-spin {
     to { transform: rotate(360deg); }
@@ -448,11 +451,12 @@ body[data-hand="left"] .hand-toggle .hand-l { display: inline; }
   .tp-btn:active {
     transform: scale(0.92);
     box-shadow:
-      0 0 20px rgba(255, 200, 100, 0.55),
-      inset 0 0 14px rgba(255, 200, 100, 0.35),
-      0 2px 6px rgba(0,0,0,0.6);
+      0 0 26px rgba(255, 200, 100, 0.7),
+      inset 0 0 18px rgba(255, 200, 100, 0.4),
+      0 2px 6px rgba(0,0,0,0.7);
+    border-color: rgba(255, 220, 140, 0.9);
   }
-  .tp-btn:active::after { animation-duration: 3s; }
+  .tp-btn:active::after { animation-duration: 2s; }
 
   /* 방향키: 좌우 여백 하단 30~35% 지점 (엄지 자연 위치) */
   .tp-left  { left: 6px;  bottom: calc(32% + env(safe-area-inset-bottom, 0px)); }
