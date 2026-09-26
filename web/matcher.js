@@ -164,246 +164,280 @@ function canonicalCompoundKey(cellEls) {
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// 규칙 1: 상하좌우 인접 서브셋 중 화이트리스트 화합물이면 소거.
-// 겹치는 서브셋은 value 큰 쪽 우선 선택 (그리디).
+// 매치 엔진 — OO 계층
+//   Field      : 2D 배열 래퍼 (get / cid / decode / neighbors)
+//   Subset     : 검출된 분자 서브셋 (compound 또는 diatomic)
+//   Rule       : 추상 규칙 (evaluate() 오버라이드)
+//   MoleculeRule / PeriodRunRule / GroupRunRule / MetalClusterRule
+//
+// game.js 는 하단 함수 shim (findMolecules/findPeriodRuns/…) 을 그대로 사용.
 // ══════════════════════════════════════════════════════════════════════
-const MOLECULE_MAX_SUBSET = 8;
-function findMolecules(f, W, H, isNobleFn, isObstacleFn) {
-  const allSubsets = [];
-  const seenSubsets = new Set();
-  const cid = (x, y) => x * H + y;
-  function skip(e) { return !e || isNobleFn(e) || isObstacleFn(e); }
 
-  function neighborsOf(x, y) {
+const NEIGHBOR_OFFSETS = [[1,0],[-1,0],[0,1],[0,-1]];
+
+class Field {
+  constructor(f, W, H) { this.f = f; this.W = W; this.H = H; }
+  get(x, y) { return this.f[x][y]; }
+  cid(x, y) { return x * this.H + y; }
+  decode(cid) { return { x: Math.floor(cid / this.H), y: cid % this.H }; }
+  inBounds(x, y) { return x >= 0 && x < this.W && y >= 0 && y < this.H; }
+  // filterFn(el, nx, ny) — true 면 스킵
+  neighborCids(x, y, filterFn) {
     const out = [];
-    for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+    for (const [dx, dy] of NEIGHBOR_OFFSETS) {
       const nx = x + dx, ny = y + dy;
-      if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
-      const e = f[nx][ny];
-      if (skip(e)) continue;
-      out.push(cid(nx, ny));
+      if (!this.inBounds(nx, ny)) continue;
+      if (filterFn && filterFn(this.f[nx][ny], nx, ny)) continue;
+      out.push(this.cid(nx, ny));
     }
     return out;
   }
+  // BFS/DFS 헬퍼: 시드에서 predicate 만족하는 인접 셀 컴포넌트 반환.
+  floodComponent(sx, sy, visited, predicate) {
+    const comp = [];
+    const stack = [[sx, sy]];
+    while (stack.length) {
+      const [x, y] = stack.pop();
+      if (!this.inBounds(x, y) || visited[x][y]) continue;
+      const e = this.f[x][y];
+      if (!predicate(e, x, y)) continue;
+      visited[x][y] = true;
+      comp.push({ x, y, e });
+      for (const [dx, dy] of NEIGHBOR_OFFSETS) stack.push([x + dx, y + dy]);
+    }
+    return comp;
+  }
+}
 
-  function extend(subsetIds, cellEls, frontier, startCid) {
-    if (subsetIds.length >= 2) {
-      let sum = 0, cat = false, an = false;
-      const distinct = new Set();
-      for (const c of cellEls) {
-        sum += c.e.charge; distinct.add(c.e.z);
-        if (c.e.charge > 0) cat = true;
-        if (c.e.charge < 0) an = true;
+class Subset {
+  constructor({ cellIds, formula, nameKr, key, size, value, isDiatomic = false }) {
+    this.cellIds = cellIds; this.formula = formula; this.nameKr = nameKr;
+    this.key = key; this.size = size; this.value = value; this.isDiatomic = isDiatomic;
+  }
+}
+
+class Rule {
+  constructor(field, ctx = {}) {
+    this.field = field;
+    this.excluded = ctx.excluded || null;
+    this.isNoble = ctx.isNoble;
+    this.isObstacle = ctx.isObstacle;
+    this.METAL_CAT = ctx.METAL_CAT;
+  }
+  isExcluded(x, y) { return this.excluded ? this.excluded.has(this.field.cid(x, y)) : false; }
+  evaluate() { throw new Error("Rule.evaluate() not implemented"); }
+}
+
+// ── 규칙 1 (+5): 분자 (화합물 화이트리스트 + 이원자). 분자량 기반 greedy. ─────
+class MoleculeRule extends Rule {
+  static MAX_SUBSET = 8;
+
+  evaluate() {
+    const allSubsets = [];
+    this._enumerateCompounds(allSubsets);
+    this._enumerateDiatomics(allSubsets);
+    return this._selectGreedy(allSubsets);
+  }
+
+  _isSkip(e) { return !e || (this.isNoble && this.isNoble(e)) || (this.isObstacle && this.isObstacle(e)); }
+
+  _enumerateCompounds(allSubsets) {
+    const field = this.field, W = field.W, H = field.H;
+    const seenSubsets = new Set();
+    const skip = e => this._isSkip(e);
+    const neighbors = (x, y) => field.neighborCids(x, y, e => skip(e));
+
+    const extend = (subsetIds, cellEls, frontier, startCid) => {
+      if (subsetIds.length >= 2) {
+        let sum = 0, cat = false, an = false;
+        const distinct = new Set();
+        for (const c of cellEls) {
+          sum += c.e.charge; distinct.add(c.e.z);
+          if (c.e.charge > 0) cat = true;
+          if (c.e.charge < 0) an = true;
+        }
+        if (sum === 0 && distinct.size >= 2 && cat && an) {
+          const key = canonicalCompoundKey(cellEls);
+          if (KNOWN_COMPOUNDS.has(key)) {
+            let mass = 0, posBonus = 0;
+            for (const c of cellEls) { mass += (c.e.mass || 0); posBonus += c.e.period * 3 + c.e.group; }
+            allSubsets.push(new Subset({
+              cellIds: new Set(subsetIds),
+              formula: _computeFormula(cellEls),
+              nameKr: COMPOUND_NAMES_KR[key] || "",
+              key, size: cellEls.length,
+              value: Math.round(mass * 100) + posBonus,
+            }));
+          }
+        }
       }
-      if (sum === 0 && distinct.size >= 2 && cat && an) {
-        const key = canonicalCompoundKey(cellEls);
-        if (KNOWN_COMPOUNDS.has(key)) {
-          let mass = 0, posBonus = 0;
-          for (const c of cellEls) { mass += (c.e.mass || 0); posBonus += c.e.period * 3 + c.e.group; }
-          allSubsets.push({
-            cellIds: new Set(subsetIds),
-            formula: _computeFormula(cellEls),
-            nameKr: COMPOUND_NAMES_KR[key] || "",
-            key, size: cellEls.length,
-            value: Math.round(mass * 100) + posBonus,
-          });
+      if (subsetIds.length >= MoleculeRule.MAX_SUBSET) return;
+      for (let i = 0; i < frontier.length; i++) {
+        const next = frontier[i];
+        if (next < startCid) continue;
+        const { x: nx, y: ny } = field.decode(next);
+        const ne = field.get(nx, ny);
+        const newIds = [...subsetIds, next].sort((a, b) => a - b);
+        const memoKey = newIds.join(",");
+        if (seenSubsets.has(memoKey)) continue;
+        seenSubsets.add(memoKey);
+        const nextFrontier = frontier.slice(i + 1).filter(c => !newIds.includes(c));
+        for (const nb of neighbors(nx, ny)) {
+          if (newIds.includes(nb)) continue;
+          if (!nextFrontier.includes(nb)) nextFrontier.push(nb);
+        }
+        extend(newIds, [...cellEls, { x: nx, y: ny, e: ne }], nextFrontier, startCid);
+      }
+    };
+
+    for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) {
+      const e = field.get(x, y);
+      if (skip(e)) continue;
+      const startCid = field.cid(x, y);
+      seenSubsets.add(String(startCid));
+      const frontier = neighbors(x, y).filter(c => c > startCid);
+      extend([startCid], [{ x, y, e }], frontier, startCid);
+    }
+  }
+
+  _enumerateDiatomics(allSubsets) {
+    const field = this.field, W = field.W, H = field.H;
+    const visited = Array.from({ length: W }, () => new Array(H).fill(false));
+    for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) {
+      if (visited[x][y]) continue;
+      const e = field.get(x, y);
+      if (!e || !DIATOMIC_KEYS.has(e.key) || (this.isObstacle && this.isObstacle(e))) {
+        visited[x][y] = true; continue;
+      }
+      const comp = field.floodComponent(x, y, visited, (ce) => ce && ce.key === e.key);
+      if (comp.length >= 2) {
+        const cellIds = new Set(comp.map(c => field.cid(c.x, c.y)));
+        let mass = 0, posBonus = 0;
+        for (const c of comp) { mass += (c.e.mass || 0); posBonus += c.e.period * 3 + c.e.group; }
+        allSubsets.push(new Subset({
+          cellIds,
+          formula: `${e.symbol}<sub>2</sub>`,
+          nameKr: DIATOMIC_NAMES_KR[e.key] || "",
+          key: `_dia_${e.key}`,
+          size: comp.length,
+          value: Math.round(mass * 100) + posBonus,
+          isDiatomic: true,
+        }));
+      }
+    }
+  }
+
+  _selectGreedy(allSubsets) {
+    allSubsets.sort((a, b) => b.value - a.value || a.key.localeCompare(b.key));
+    const claimedCells = new Set();
+    const compoundCells = new Set();
+    const diatomicCells = new Set();
+    const selected = [];
+    const seenKeys = new Set();
+    for (const s of allSubsets) {
+      let overlap = false;
+      for (const cid of s.cellIds) if (claimedCells.has(cid)) { overlap = true; break; }
+      if (overlap) continue;
+      for (const cid of s.cellIds) {
+        claimedCells.add(cid);
+        if (s.isDiatomic) diatomicCells.add(cid); else compoundCells.add(cid);
+      }
+      if (!seenKeys.has(s.key)) { seenKeys.add(s.key); selected.push(s); }
+    }
+    return { cells: claimedCells, subsets: selected, compoundCells, diatomicCells };
+  }
+}
+
+// ── 규칙 2/3 공통: 같은 축으로 연속하는 서로 다른 z 개수 판정 ────────────────
+class LinearRunRule extends Rule {
+  // 서브클래스가 axisLen / crossLen / minDistinct / axisKey('period'|'group') 결정.
+  // 셀 접근은 방향에 따라 (i, j) → (x, y) 매핑.
+  _cellAt(i, j) { throw new Error("_cellAt() not implemented"); }
+  _cidAt(i, j) { throw new Error("_cidAt() not implemented"); }
+
+  evaluate() {
+    const result = new Set();
+    for (let j = 0; j < this.crossLen; j++) {
+      for (let start = 0; start < this.axisLen; start++) {
+        const seen = new Set();
+        let axisVal = null, end = start;
+        while (end < this.axisLen) {
+          const e = this._cellAt(end, j);
+          if (!e || (this.isObstacle && this.isObstacle(e)) || this._isExcludedAt(end, j)) break;
+          if (axisVal === null) axisVal = e[this.axisKey];
+          else if (axisVal !== e[this.axisKey]) break;
+          if (seen.has(e.z)) break;
+          seen.add(e.z); end++;
+        }
+        if (seen.size >= this.minDistinct) {
+          for (let i = start; i < end; i++) result.add(this._cidAt(i, j));
         }
       }
     }
-    if (subsetIds.length >= MOLECULE_MAX_SUBSET) return;
-    for (let i = 0; i < frontier.length; i++) {
-      const next = frontier[i];
-      if (next < startCid) continue;
-      const nx = Math.floor(next / H), ny = next % H;
-      const ne = f[nx][ny];
-      const newIds = [...subsetIds, next].sort((a, b) => a - b);
-      const key = newIds.join(",");
-      if (seenSubsets.has(key)) continue;
-      seenSubsets.add(key);
-      const nextFrontier = frontier.slice(i + 1).filter(c => !newIds.includes(c));
-      for (const nb of neighborsOf(nx, ny)) {
-        if (newIds.includes(nb)) continue;
-        if (!nextFrontier.includes(nb)) nextFrontier.push(nb);
+    return result;
+  }
+}
+
+class PeriodRunRule extends LinearRunRule {
+  static MIN_DISTINCT = 5;
+  constructor(field, ctx) {
+    super(field, ctx);
+    this.axisKey = "period"; this.minDistinct = PeriodRunRule.MIN_DISTINCT;
+    this.axisLen = field.W; this.crossLen = field.H;
+  }
+  _cellAt(i, j) { return this.field.get(i, j); }      // i=x, j=y (가로)
+  _cidAt(i, j) { return this.field.cid(i, j); }
+  _isExcludedAt(i, j) { return this.isExcluded(i, j); }
+}
+
+class GroupRunRule extends LinearRunRule {
+  static MIN_DISTINCT = 3;
+  constructor(field, ctx) {
+    super(field, ctx);
+    this.axisKey = "group"; this.minDistinct = GroupRunRule.MIN_DISTINCT;
+    this.axisLen = field.H; this.crossLen = field.W;
+  }
+  _cellAt(i, j) { return this.field.get(j, i); }      // i=y, j=x (세로)
+  _cidAt(i, j) { return this.field.cid(j, i); }
+  _isExcludedAt(i, j) { return this.isExcluded(j, i); }
+}
+
+// ── 규칙 4: 같은 z 금속 컴포넌트 5개 이상. 이온 변종 통합. ───────────────────
+class MetalClusterRule extends Rule {
+  static MIN_CLUSTER = 5;
+  evaluate() {
+    const field = this.field, W = field.W, H = field.H;
+    const result = new Set();
+    const visited = Array.from({ length: W }, () => new Array(H).fill(false));
+    for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) {
+      if (visited[x][y]) continue;
+      const e = field.get(x, y);
+      if (!e || e.category !== this.METAL_CAT || this.isExcluded(x, y)) {
+        visited[x][y] = true; continue;
       }
-      extend(newIds, [...cellEls, { x: nx, y: ny, e: ne }], nextFrontier, startCid);
-    }
-  }
-
-  for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) {
-    const e = f[x][y];
-    if (skip(e)) continue;
-    const startCid = cid(x, y);
-    seenSubsets.add(String(startCid));
-    const frontier = neighborsOf(x, y).filter(c => c > startCid);
-    extend([startCid], [{ x, y, e }], frontier, startCid);
-  }
-
-  // 이원자 기체 (H/N/O/F/Cl/Br) 같은 원소 2개 이상 상하좌우 연결 → 분자와 동일 우선순위 트랙에서 경쟁.
-  // 각 연결 컴포넌트를 하나의 서브셋으로 등록. 분자량 기반 value 로 greedy 대상.
-  const diaVisited = Array.from({ length: W }, () => new Array(H).fill(false));
-  for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) {
-    if (diaVisited[x][y]) continue;
-    const e = f[x][y];
-    if (!e || !DIATOMIC_KEYS.has(e.key) || isObstacleFn(e)) { diaVisited[x][y] = true; continue; }
-    const comp = [];
-    const stack = [{ x, y }];
-    while (stack.length) {
-      const p = stack.pop();
-      if (p.x < 0 || p.x >= W || p.y < 0 || p.y >= H) continue;
-      if (diaVisited[p.x][p.y]) continue;
-      const ce = f[p.x][p.y];
-      if (!ce || ce.key !== e.key) continue;
-      diaVisited[p.x][p.y] = true;
-      comp.push({ x: p.x, y: p.y, e: ce });
-      stack.push({ x: p.x + 1, y: p.y }); stack.push({ x: p.x - 1, y: p.y });
-      stack.push({ x: p.x, y: p.y + 1 }); stack.push({ x: p.x, y: p.y - 1 });
-    }
-    if (comp.length >= 2) {
-      const cellIds = new Set(comp.map(c => cid(c.x, c.y)));
-      let mass = 0, posBonus = 0;
-      for (const c of comp) { mass += (c.e.mass || 0); posBonus += c.e.period * 3 + c.e.group; }
-      allSubsets.push({
-        cellIds,
-        formula: `${e.symbol}<sub>2</sub>`,
-        nameKr: DIATOMIC_NAMES_KR[e.key] || "",
-        key: `_dia_${e.key}`,
-        size: comp.length,
-        value: Math.round(mass * 100) + posBonus,
-        isDiatomic: true,
-      });
-    }
-  }
-
-  allSubsets.sort((a, b) => b.value - a.value || a.key.localeCompare(b.key));
-  const claimedCells = new Set();
-  const compoundCells = new Set();
-  const diatomicCells = new Set();
-  const selected = [];
-  const seenKeys = new Set();
-  for (const s of allSubsets) {
-    let overlap = false;
-    for (const cellId of s.cellIds) if (claimedCells.has(cellId)) { overlap = true; break; }
-    if (overlap) continue;
-    for (const cellId of s.cellIds) {
-      claimedCells.add(cellId);
-      if (s.isDiatomic) diatomicCells.add(cellId);
-      else compoundCells.add(cellId);
-    }
-    if (!seenKeys.has(s.key)) {
-      seenKeys.add(s.key);
-      selected.push(s);
-    }
-  }
-  return { cells: claimedCells, subsets: selected, compoundCells, diatomicCells };
-}
-
-// 규칙 2: 같은 주기 가로 5개 이상 서로 다른 원소. 분자(규칙1)에 이미 쓰인 셀은 스킵.
-function findPeriodRuns(f, W, H, isObstacleFn, excluded = null) {
-  const result = new Set();
-  const isExcluded = (x, y) => excluded && excluded.has(x * H + y);
-  // 다양성은 z(원자번호)로 판정 — 같은 원소의 이온 변종(C/CP, SI/SIM, FE2/FE3 등)은 하나로.
-  for (let y = 0; y < H; y++) {
-    for (let start = 0; start < W; start++) {
-      const seen = new Set(); let period = null, end = start;
-      while (end < W) {
-        const e = f[end][y];
-        if (!e || isObstacleFn(e) || isExcluded(end, y)) break;
-        if (period === null) period = e.period;
-        else if (period !== e.period) break;
-        if (seen.has(e.z)) break;
-        seen.add(e.z); end++;
+      const z = e.z;
+      const comp = field.floodComponent(x, y, visited,
+        (ce, cx, cy) => ce && ce.z === z && !this.isExcluded(cx, cy));
+      if (comp.length >= MetalClusterRule.MIN_CLUSTER) {
+        for (const c of comp) result.add(field.cid(c.x, c.y));
       }
-      if (seen.size >= 5) for (let x = start; x < end; x++) result.add(x * H + y);
     }
+    return result;
   }
-  return result;
 }
 
-// 규칙 3: 같은 족 세로 3개 이상 서로 다른 원소. 분자 셀 스킵.
-function findGroupRuns(f, W, H, isObstacleFn, excluded = null) {
-  const result = new Set();
-  const isExcluded = (x, y) => excluded && excluded.has(x * H + y);
-  for (let x = 0; x < W; x++) {
-    for (let start = 0; start < H; start++) {
-      const seen = new Set(); let group = null, end = start;
-      while (end < H) {
-        const e = f[x][end];
-        if (!e || isObstacleFn(e) || isExcluded(x, end)) break;
-        if (group === null) group = e.group;
-        else if (group !== e.group) break;
-        if (seen.has(e.z)) break;
-        seen.add(e.z); end++;
-      }
-      if (seen.size >= 3) for (let y = start; y < end; y++) result.add(x * H + y);
-    }
-  }
-  return result;
+// ── shim 함수 (game.js 호환) ──────────────────────────────────────────────
+function findMolecules(f, W, H, isNoble, isObstacle) {
+  return new MoleculeRule(new Field(f, W, H), { isNoble, isObstacle }).evaluate();
 }
-
-// 규칙 5: 이원자 기체 (H, N, O, F, Cl) 같은 원소 2개 이상 인접 → 소거.
-// excluded: 규칙 1 분자에 이미 쓰인 셀들 (다시 세지 않음).
-function findDiatomics(f, W, H, excluded = null) {
-  const result = new Set();
-  const visited = Array.from({ length: W }, () => new Array(H).fill(false));
-  const isExcluded = (x, y) => excluded && excluded.has(x * H + y);
-  for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) {
-    if (visited[x][y]) continue;
-    const e = f[x][y];
-    if (!e || !DIATOMIC_KEYS.has(e.key) || isExcluded(x, y)) { visited[x][y] = true; continue; }
-    const comp = [];
-    const stack = [{ x, y }];
-    while (stack.length) {
-      const p = stack.pop();
-      if (p.x < 0 || p.x >= W || p.y < 0 || p.y >= H) continue;
-      if (visited[p.x][p.y]) continue;
-      if (isExcluded(p.x, p.y)) continue;
-      const ce = f[p.x][p.y];
-      if (!ce || ce.key !== e.key) continue;
-      visited[p.x][p.y] = true;
-      comp.push({ x: p.x, y: p.y, key: e.key });
-      stack.push({ x: p.x + 1, y: p.y }); stack.push({ x: p.x - 1, y: p.y });
-      stack.push({ x: p.x, y: p.y + 1 }); stack.push({ x: p.x, y: p.y - 1 });
-    }
-    if (comp.length >= 2) {
-      for (const c of comp) result.add(c.x * H + c.y);
-    }
-  }
-  return result;
+function findPeriodRuns(f, W, H, isObstacle, excluded = null) {
+  return new PeriodRunRule(new Field(f, W, H), { isObstacle, excluded }).evaluate();
 }
-
-// 규칙 4: 같은 금속 원소 상하좌우 5개 이상 → 소거. (원소 종류가 같아야 함, 이온 변종은 하나로 취급)
-// 분자에 이미 쓰인 셀은 스킵 (분자가 최우선).
+function findGroupRuns(f, W, H, isObstacle, excluded = null) {
+  return new GroupRunRule(new Field(f, W, H), { isObstacle, excluded }).evaluate();
+}
 function findMetalClusters(f, W, H, METAL_CAT, excluded = null) {
-  const result = new Set();
-  const visited = Array.from({ length: W }, () => new Array(H).fill(false));
-  const isExcluded = (x, y) => excluded && excluded.has(x * H + y);
-  for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) {
-    if (visited[x][y]) continue;
-    const e = f[x][y];
-    if (!e || e.category !== METAL_CAT || isExcluded(x, y)) { visited[x][y] = true; continue; }
-    // 같은 원소는 원자번호 z 기준 (FE2/FE3 등 이온 변종 통합)
-    const z = e.z;
-    const comp = [];
-    const stack = [{ x, y }];
-    while (stack.length) {
-      const p = stack.pop();
-      if (p.x < 0 || p.x >= W || p.y < 0 || p.y >= H) continue;
-      if (visited[p.x][p.y]) continue;
-      if (isExcluded(p.x, p.y)) continue;
-      const ce = f[p.x][p.y];
-      if (!ce || ce.z !== z) continue;
-      visited[p.x][p.y] = true;
-      comp.push({ x: p.x, y: p.y });
-      stack.push({ x: p.x + 1, y: p.y });
-      stack.push({ x: p.x - 1, y: p.y });
-      stack.push({ x: p.x, y: p.y + 1 });
-      stack.push({ x: p.x, y: p.y - 1 });
-    }
-    if (comp.length >= 5) {
-      for (const c of comp) result.add(c.x * H + c.y);
-    }
-  }
-  return result;
+  return new MetalClusterRule(new Field(f, W, H), { METAL_CAT, excluded }).evaluate();
 }
 
 function decodePositions(encoded, H) {
