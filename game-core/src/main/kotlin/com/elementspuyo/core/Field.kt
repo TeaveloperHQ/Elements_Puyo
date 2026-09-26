@@ -1,25 +1,46 @@
 package com.elementspuyo.core
 
 /**
- * 게임 필드. 기본 8칸(옥텟) × 12층.
+ * 게임 필드. 기본 8열 × 12층.
  * (x, y) 에서 y=0 이 바닥.
+ *
+ * cid 인코딩: x * height + y (웹 matcher.js 와 동일). MatchResult 는 cid 로 셀 지목.
  */
 class Field(val width: Int = WIDTH, val height: Int = HEIGHT) {
     companion object {
-        const val WIDTH = 8   // 옥텟 규칙의 8
-        const val HEIGHT = 12 // 뿌요 표준 세로
+        const val WIDTH = 8
+        const val HEIGHT = 12
+        val NEIGHBORS = listOf(1 to 0, -1 to 0, 0 to 1, 0 to -1)
     }
 
     private val cells: Array<Array<Element?>> = Array(width) { arrayOfNulls(height) }
 
     operator fun get(x: Int, y: Int): Element? {
-        if (x !in 0 until width || y !in 0 until height) return null
+        if (!inBounds(x, y)) return null
         return cells[x][y]
     }
 
     operator fun set(x: Int, y: Int, e: Element?) {
-        require(x in 0 until width && y in 0 until height) { "out of bounds ($x,$y)" }
+        require(inBounds(x, y)) { "out of bounds ($x,$y)" }
         cells[x][y] = e
+    }
+
+    fun inBounds(x: Int, y: Int): Boolean =
+        x in 0 until width && y in 0 until height
+
+    fun cid(x: Int, y: Int): Int = x * height + y
+    fun decode(cid: Int): Pos = Pos(cid / height, cid % height)
+
+    /** 4-이웃 cid 목록 (필터 통과 셀만). filter(e, nx, ny) 가 true 면 스킵. */
+    fun neighborCids(x: Int, y: Int, filter: (Element?, Int, Int) -> Boolean): List<Int> {
+        val out = ArrayList<Int>(4)
+        for ((dx, dy) in NEIGHBORS) {
+            val nx = x + dx; val ny = y + dy
+            if (!inBounds(nx, ny)) continue
+            if (filter(cells[nx][ny], nx, ny)) continue
+            out.add(cid(nx, ny))
+        }
+        return out
     }
 
     /** 열 x 의 채워진 높이 (다음 낙하 시 착지 y). */
@@ -39,9 +60,12 @@ class Field(val width: Int = WIDTH, val height: Int = HEIGHT) {
         return h
     }
 
-    /** 지정된 위치들을 비움. */
-    fun clearAll(positions: Set<Pos>) {
-        for (p in positions) if (p.x in 0 until width && p.y in 0 until height) cells[p.x][p.y] = null
+    /** 지정된 cid 위치들을 비움. */
+    fun clearCids(positions: Set<Int>) {
+        for (c in positions) {
+            val p = decode(c)
+            if (inBounds(p.x, p.y)) cells[p.x][p.y] = null
+        }
     }
 
     /** 각 열에서 빈 칸 위의 원소들을 아래로 내림. 하나라도 움직였으면 true. */
@@ -62,15 +86,16 @@ class Field(val width: Int = WIDTH, val height: Int = HEIGHT) {
         return moved
     }
 
-    /** 디버그·테스트용 필드 상태 스냅샷. */
-    fun snapshot(): List<List<Element?>> = List(height) { y -> List(width) { x -> cells[x][y] } }
+    /** 디버그·테스트용 스냅샷. */
+    fun snapshot(): List<List<Element?>> =
+        List(height) { y -> List(width) { x -> cells[x][y] } }
 
-    /** 테스트용 짧은 문자열 표현. 위에서 아래로 각 행 출력, 이온 라벨 사용. */
+    /** 테스트용 짧은 문자열 표현 (위 → 아래로 각 행). */
     fun render(): String = buildString {
         for (y in height - 1 downTo 0) {
             for (x in 0 until width) {
                 val e = cells[x][y]
-                append(if (e == null) " .  " else "%-4s".format(e.label))
+                append(if (e == null) " .   " else "%-5s".format(e.label))
             }
             append('\n')
         }
