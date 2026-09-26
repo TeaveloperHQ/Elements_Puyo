@@ -79,19 +79,26 @@ const ATOMIC_MASS = {
 };
 for (const k in ELEMENTS) ELEMENTS[k].mass = ATOMIC_MASS[ELEMENTS[k].z] || 0;
 
-// 낙하 큐 가중치 — z(원자) 기준 등확률 + 4주기는 3주기 총합에 맞춰 다운스케일.
-// 그래서 이온 변종(FE2/FE3, C/CP 등)은 같은 z 슬롯을 나눠 가짐: 한 원소로 등장 확률은 다른 원소와 같음.
-const _P4_SCALE = 8 / 18;   // period4 z 수(18) 를 period3 z 수(8) 로 맞춤 → 총합 비율 8:8
+// 낙하 큐 가중치 — 주기별 총 확률 P1:P2:P3:P4 = 10:35:35:20. (P1 은 우주 원소 비율 참고, H:He = 3:1)
+// P2/P3/P4 내부는 z(원자) 기준 등확률, 이온 변종은 그 z 슬롯을 나눠 가짐.
+const _PERIOD_TOTALS = { 1: 10, 2: 35, 3: 35, 4: 20 };
 {
-  const zVariantCount = {};
+  const zVariantCount = {}, zPerPeriod = {}, seenZ = {};
   for (const k in ELEMENTS) {
-    const z = ELEMENTS[k].z;
+    const z = ELEMENTS[k].z, p = ELEMENTS[k].period;
     zVariantCount[z] = (zVariantCount[z] || 0) + 1;
+    if (!seenZ[p]) seenZ[p] = new Set();
+    if (!seenZ[p].has(z)) { seenZ[p].add(z); zPerPeriod[p] = (zPerPeriod[p] || 0) + 1; }
   }
   for (const k in ELEMENTS) {
     const e = ELEMENTS[k];
-    const scale = e.period === 4 ? _P4_SCALE : 1;
-    e.weight = scale / zVariantCount[e.z];
+    if (!_PERIOD_TOTALS[e.period]) { e.weight = 0; continue; }   // obstacle
+    if (e.period === 1) {
+      e.weight = e.z === 1 ? _PERIOD_TOTALS[1] * 0.75 : _PERIOD_TOTALS[1] * 0.25;
+    } else {
+      const perZ = _PERIOD_TOTALS[e.period] / zPerPeriod[e.period];
+      e.weight = perZ / zVariantCount[e.z];
+    }
   }
 }
 
@@ -186,7 +193,12 @@ function pickWeighted(arr) {
   return arr[arr.length - 1];
 }
 function fallSpeedForLevel(lv) { return Math.min(FALL_SPEED_MAX, FALL_SPEED_BASE + (lv - 1) * FALL_SPEED_PER_LEVEL); }
-function periodColor(period) { return period === 1 ? "#ffcf3d" : period === 2 ? "#7ed88a" : "#6fbcf5"; }
+function periodColor(period) {
+  return period === 1 ? "#ffcf3d"
+       : period === 2 ? "#7ed88a"
+       : period === 3 ? "#6fbcf5"
+       : "#dcb0ff";
+}
 
 // 원소 하나 뽑기 (장애물 제외)
 function generatePiece() { return { element: pickWeighted(ALL_ELEMENTS) }; }

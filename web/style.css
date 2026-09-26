@@ -20,6 +20,10 @@
   --p3-light: #7fc0fb;
   --p3-dark: #145394;
 
+  --p4-base: #b558ff;
+  --p4-light: #dcb0ff;
+  --p4-dark: #6b21a8;
+
   --grey-base: #8892a6;
   --grey-light: #c0c8d6;
   --grey-dark: #3d4658;
@@ -578,6 +582,7 @@ body[data-hand="left"] .hand-toggle .hand-l { display: inline; }
 .ball.p1 { --base: var(--p1-base); --light: var(--p1-light); --dark: var(--p1-dark); color: #2b1e00; text-shadow: 0 1px 1px rgba(255,255,255,0.3); }
 .ball.p2 { --base: var(--p2-base); --light: var(--p2-light); --dark: var(--p2-dark); }
 .ball.p3 { --base: var(--p3-base); --light: var(--p3-light); --dark: var(--p3-dark); }
+.ball.p4 { --base: var(--p4-base); --light: var(--p4-light); --dark: var(--p4-dark); }
 
 /* 금속 원소: 진짜 크롬 광택 — 3-밴드 그라디언트 + 강한 스펙큘러 + shimmer 애니메이션 */
 .ball.metal {
@@ -1087,6 +1092,7 @@ body[data-hand="left"] .hand-toggle .hand-l { display: inline; }
 .next .mini-ball.p1 { --base: var(--p1-base); --light: var(--p1-light); --dark: var(--p1-dark); color: #2b1e00; text-shadow: none; }
 .next .mini-ball.p2 { --base: var(--p2-base); --light: var(--p2-light); --dark: var(--p2-dark); }
 .next .mini-ball.p3 { --base: var(--p3-base); --light: var(--p3-light); --dark: var(--p3-dark); }
+.next .mini-ball.p4 { --base: var(--p4-base); --light: var(--p4-light); --dark: var(--p4-dark); }
 .next .mini-ball.empty { background: transparent; box-shadow: none; }
 
 .rules ol { margin: 4px 0 0; padding-left: 20px; font-size: 12px; opacity: 0.85; line-height: 1.55; }
