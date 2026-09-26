@@ -157,6 +157,7 @@ fun GameScreen() {
         falling = null
         snap = game.snap()
         Sfx.playLand()
+        Haptic.tick()
 
         // 연쇄 루프
         val prevLevel = currentLevel
@@ -176,7 +177,8 @@ fun GameScreen() {
                 else -> "molecule"
             }
             Sfx.playClear(primary)
-            if (chainIdx >= 2) Sfx.playChain(chainIdx)
+            Haptic.clear()
+            if (chainIdx >= 2) { Sfx.playChain(chainIdx); Haptic.chain(chainIdx) }
 
             flashing = res.allCleared
             val firstNamed = res.subsets.firstOrNull { it.nameKr.isNotEmpty() }
@@ -236,12 +238,12 @@ fun GameScreen() {
             val cy = anchor?.cy ?: snap.height / 2f
             floatScore = FloatingScore(totalDelta, cx, cy, big = chainIdx >= 2)
             floatT.snapTo(0f)
-            launch { floatT.animateTo(1f, tween(900)); floatScore = null }
+            launch { floatT.animateTo(1f, tween(1400)); floatScore = null }
 
             message = "${chainIdx}연쇄 · +$totalDelta · ${chainNames.take(3).joinToString(", ")}"
             stats.recordScore(snap.totalScore, currentLevel)
 
-            delay(500)
+            delay(1300)   // 팝업이 오래 보이도록 lingering
         } else {
             message = null
         }
@@ -251,8 +253,9 @@ fun GameScreen() {
         val newLevel = Ranks.levelForScore(snap.totalScore)
         if (newLevel > prevLevel) {
             levelUpTo = newLevel
-            Sfx.playChain(6)  // 축하 소리
-            delay(1600)
+            Sfx.playLevelUp()
+            Haptic.levelUp()
+            delay(1800)
             levelUpTo = null
         }
 
@@ -290,7 +293,10 @@ fun GameScreen() {
                 current = snap.current,
                 next = snap.next,
                 soundOn = soundOn,
-                onToggleSound = { soundOn = Sfx.toggle() },
+                onToggleSound = {
+                    soundOn = Sfx.toggle()
+                    Haptic.setEnabled(soundOn)
+                },
                 onHelp = { showRules = true },
             )
             Spacer(Modifier.height(6.dp))
@@ -390,27 +396,26 @@ private fun TopHud(
 @Composable
 private fun RankStripe(currentLevel: Int, rank: AlchemistRank, progress: Float, highScore: Int) {
     Row(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFF1A1A2E)).padding(horizontal = 8.dp, vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp))
+            .background(Color(0xFF1A1A2E)).padding(horizontal = 6.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ChemistPortrait(rankIndex = currentLevel - 1, size = 40.dp)
-        Spacer(Modifier.width(10.dp))
+        ChemistPortrait(rankIndex = currentLevel - 1, size = 30.dp)
+        Spacer(Modifier.width(8.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text("RANK $currentLevel · ${rank.nameKr}", color = Color(0xFFFFCF3D), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            Text(rank.era, color = Color(0xFF9AA5B8), fontSize = 9.sp)
-            Spacer(Modifier.height(3.dp))
-            // Progress bar
-            Box(modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp))
+            Text("R$currentLevel · ${rank.nameKr}",
+                color = Color(0xFFFFCF3D), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(2.dp))
+            Box(modifier = Modifier.fillMaxWidth().height(3.dp).clip(RoundedCornerShape(2.dp))
                 .background(Color(0x33FFFFFF))) {
-                Box(modifier = Modifier.fillMaxWidth(progress).height(4.dp)
+                Box(modifier = Modifier.fillMaxWidth(progress).height(3.dp)
                     .clip(RoundedCornerShape(2.dp)).background(Color(0xFFDCB0FF)))
             }
         }
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(8.dp))
         Column(horizontalAlignment = Alignment.End) {
-            Text("HIGH", color = Color(0xFF9AA5B8), fontSize = 9.sp)
-            Text("$highScore", color = Color(0xFFDCB0FF), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text("HIGH", color = Color(0xFF9AA5B8), fontSize = 8.sp)
+            Text("$highScore", color = Color(0xFFDCB0FF), fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -420,18 +425,26 @@ private fun LabeledMiniBall(label: String, e: Element) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, color = Color(0xFF9AA5B8), fontSize = 10.sp)
         Spacer(Modifier.height(2.dp))
-        Canvas(modifier = Modifier.size(36.dp)) {
-            val cx = size.width / 2; val cy = size.height / 2
-            val r = size.width * 0.45f
-            val (light, base, dark) = periodPalette(e.period)
-            val brush = Brush.radialGradient(
-                colors = listOf(light, base, dark),
-                center = Offset(cx - r * 0.3f, cy - r * 0.35f),
-                radius = r * 1.4f,
+        Box(modifier = Modifier.size(36.dp), contentAlignment = Alignment.Center) {
+            Canvas(modifier = Modifier.size(36.dp)) {
+                val cx = size.width / 2; val cy = size.height / 2
+                val r = size.width * 0.45f
+                val (light, base, dark) = periodPalette(e.period)
+                val brush = Brush.radialGradient(
+                    colors = listOf(light, base, dark),
+                    center = Offset(cx - r * 0.3f, cy - r * 0.35f),
+                    radius = r * 1.4f,
+                )
+                drawCircle(brush = brush, radius = r, center = Offset(cx, cy))
+                drawCircle(Color(0x44000000), r, Offset(cx, cy), style = Stroke(width = 1f))
+            }
+            Text(
+                e.label,
+                color = Color(0xFF10121A),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
             )
-            drawCircle(brush = brush, radius = r, center = Offset(cx, cy))
         }
-        // label overlay via Box - unfortunately need Text on top. Simpler: use Box with Canvas + Text
     }
 }
 
@@ -541,7 +554,7 @@ private fun FieldView(
         // 파티클
         if (particles.isNotEmpty() && particleT > 0f) {
             for (p in particles) {
-                val originC = cellCenter(p.originCx.toInt(), snap.height - 1 - p.originCy)
+                val originC = cellCenter(p.originCx.toInt(), p.originCy)
                 val rad = p.angle * kotlin.math.PI.toFloat() / 180f
                 val d = p.speed * particleT * cell * 0.6f
                 val px = originC.x + cos(rad) * d
@@ -553,14 +566,21 @@ private fun FieldView(
 
         // 화합물 팝업 (분자 = 6망성 배경, 이원자/기타 = 원형 배경)
         if (popup != null) {
-            val c = cellCenter(popup.cx.toInt(), snap.height - 1 - popup.cy)
-            val py = c.y - cell * 1.8f
-            val ringR = cell * 1.5f
+            val c = cellCenter(popup.cx.toInt(), popup.cy)
+            val ringR = cell * 1.6f
+            // 팝업이 필드 안에 완전히 들어오도록 위치 클램프
+            val desiredY = c.y - cell * 1.9f
+            val minY = offY + ringR + cell * 0.2f
+            val maxY = offY + fieldH - ringR - cell * 0.2f
+            val py = desiredY.coerceIn(minY, maxY)
+            val minX = offX + ringR + cell * 0.2f
+            val maxX = offX + fieldW - ringR - cell * 0.2f
+            val px = c.x.coerceIn(minX, maxX)
             // 배경 링
-            drawCircle(Color(0xB01A1A2E), ringR, Offset(c.x, py))
-            drawCircle(Color(0xFFFFCF3D), ringR, Offset(c.x, py), style = Stroke(width = 1.2f))
+            drawCircle(Color(0xB0000000), ringR, Offset(px, py))
+            drawCircle(Color(0xFFFFCF3D), ringR, Offset(px, py), style = Stroke(width = 1.8f))
             if (popup.isMolecule) {
-                drawHexagram(Offset(c.x, py), ringR * 0.95f, Color(0xFFFFDC8C).copy(alpha = 0.85f), 1.5f, hexProgress)
+                drawHexagram(Offset(px, py), ringR * 0.95f, Color(0xFFFFDC8C).copy(alpha = 0.85f), 1.5f, hexProgress)
             }
             // 텍스트
             val formStyle = TextStyle(
@@ -574,24 +594,30 @@ private fun FieldView(
             )
             val formLayout = textMeasurer.measure(popup.formula, formStyle)
             val nameLayout = textMeasurer.measure(popup.nameKr, nameStyle)
-            drawText(formLayout, topLeft = Offset(c.x - formLayout.size.width / 2, py - formLayout.size.height / 2 - cell * 0.08f))
-            drawText(nameLayout, topLeft = Offset(c.x - nameLayout.size.width / 2, py + cell * 0.20f))
+            drawText(formLayout, topLeft = Offset(px - formLayout.size.width / 2, py - formLayout.size.height / 2 - cell * 0.08f))
+            drawText(nameLayout, topLeft = Offset(px - nameLayout.size.width / 2, py + cell * 0.20f))
         }
 
         // 플로팅 점수 (반응 위치에서 위로 fade)
         if (floatScore != null && floatT < 1f) {
-            val c = cellCenter(floatScore.cx.toInt(), snap.height - 1 - floatScore.cy)
-            val yOff = -cell * 1.5f * floatT
-            val alpha = (1f - floatT).coerceIn(0f, 1f)
-            val fs = if (floatScore.big) cell * 0.55f else cell * 0.42f
-            val style = TextStyle(
-                fontSize = (fs / density).sp,
-                color = Color(0xFFFFDD66).copy(alpha = alpha),
-                fontWeight = FontWeight.Black,
-            )
+            val c = cellCenter(floatScore.cx.toInt(), floatScore.cy)
+            val yOff = -cell * 2.5f * floatT
+            val alpha = (1f - floatT * 0.9f).coerceIn(0f, 1f)
+            val fs = if (floatScore.big) cell * 0.75f else cell * 0.55f
             val txt = "+${floatScore.amount}"
-            val layout = textMeasurer.measure(txt, style)
-            drawText(layout, topLeft = Offset(c.x - layout.size.width / 2, c.y + yOff - layout.size.height / 2))
+            // 검은 외곽 + 노란 본체
+            val outline = TextStyle(fontSize = (fs / density).sp, color = Color.Black, fontWeight = FontWeight.Black)
+            val body = TextStyle(fontSize = (fs / density).sp,
+                color = Color(0xFFFFDD66).copy(alpha = alpha),
+                fontWeight = FontWeight.Black)
+            val bodyLayout = textMeasurer.measure(txt, body)
+            val outlineLayout = textMeasurer.measure(txt, outline.copy(color = Color.Black.copy(alpha = alpha * 0.7f)))
+            val tx = c.x - bodyLayout.size.width / 2
+            val ty = c.y + yOff - bodyLayout.size.height / 2
+            for ((dx, dy) in listOf(-2 to 0, 2 to 0, 0 to -2, 0 to 2)) {
+                drawText(outlineLayout, topLeft = Offset(tx + dx, ty + dy))
+            }
+            drawText(bodyLayout, topLeft = Offset(tx, ty))
         }
     }
 }

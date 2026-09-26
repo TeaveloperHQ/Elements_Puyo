@@ -9,6 +9,7 @@ import androidx.compose.material3.darkColorScheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Haptic.init(this)
         setContent {
             MaterialTheme(colorScheme = darkColorScheme()) {
                 GameScreen()

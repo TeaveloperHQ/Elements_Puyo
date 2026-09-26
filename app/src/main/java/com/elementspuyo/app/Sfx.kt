@@ -50,6 +50,13 @@ object Sfx {
         playTone(freq, 140, 0.28f)
     }
 
+    /** 랭크 상승 축하 (C-E-G 상승 3음). */
+    fun playLevelUp() = fire {
+        playTone(523.0, 90, 0.25f); Thread.sleep(70)
+        playTone(659.0, 90, 0.25f); Thread.sleep(70)
+        playTone(784.0, 200, 0.30f)
+    }
+
     // ── 내부 ─────────────────────────────────────────────────────────
     private inline fun fire(crossinline action: () -> Unit) {
         if (!enabled.get()) return
