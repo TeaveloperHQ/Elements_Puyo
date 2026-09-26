@@ -40,22 +40,21 @@
     `;
     document.body.appendChild(div);
 
-    // 아바타 카드 렌더 (attacker · defender)
+    // 아바타 카드 렌더 (4종: 공격형 남/여 + 수비형 남/여)
     const cardsEl = div.querySelector("#picker-cards");
     for (const key of AVATAR_KEYS) {
       const a = AVATAR_TYPES[key];
       const b = document.createElement("button");
-      b.className = `picker-card ${key}`;
+      b.className = `picker-card family-${a.family}`;
       b.dataset.type = key;
       b.innerHTML = `
         <div class="picker-emblem">${a.emblem}</div>
         <div class="picker-name">${a.nameKr}</div>
         <div class="picker-mods">
-          공격 ×${a.modifiers.attack.toFixed(2)}<br>
-          회복 ×${a.modifiers.heal.toFixed(2)}<br>
-          실드 ×${a.modifiers.shield.toFixed(2)}
+          공격 ×${a.modifiers.attack.toFixed(2)}
+          · 회복 ×${a.modifiers.heal.toFixed(2)}
+          · 실드 ×${a.modifiers.shield.toFixed(2)}
         </div>
-        <div class="picker-tagline">${a.tagline}</div>
       `;
       cardsEl.appendChild(b);
     }

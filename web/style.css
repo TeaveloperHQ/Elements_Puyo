@@ -1444,8 +1444,8 @@ body.solo-mode #stage-btn { display: none; }
 .avatar-card { display: flex; align-items: center; gap: 10px;
   padding: 6px 10px; background: rgba(20,20,32,0.55);
   border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; }
-.avatar-card.attacker { border-color: rgba(231,76,60,0.35); }
-.avatar-card.defender { border-color: rgba(52,152,219,0.35); }
+.avatar-card.family-attacker { border-color: rgba(231,76,60,0.35); }
+.avatar-card.family-defender { border-color: rgba(52,152,219,0.35); }
 .avatar-emblem { display: block; border-radius: 50%; overflow: hidden;
   box-shadow: inset 0 0 6px rgba(0,0,0,0.5); }
 .avatar-emblem svg { width: 100%; height: 100%; }
@@ -1498,9 +1498,9 @@ body.solo-mode #stage-btn { display: none; }
   display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .picker-card:hover { border-color: rgba(255, 255, 255, 0.28);
   background: rgba(30, 30, 48, 0.7); }
-.picker-card.attacker.selected { border-color: #e74c3c;
+.picker-card.family-attacker.selected { border-color: #e74c3c;
   background: rgba(231, 76, 60, 0.12); box-shadow: 0 0 24px rgba(231, 76, 60, 0.4); }
-.picker-card.defender.selected { border-color: #3498db;
+.picker-card.family-defender.selected { border-color: #3498db;
   background: rgba(52, 152, 219, 0.12); box-shadow: 0 0 24px rgba(52, 152, 219, 0.4); }
 .picker-emblem { width: 74px; height: 74px; border-radius: 50%; overflow: hidden;
   box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.6); }
