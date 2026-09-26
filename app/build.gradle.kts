@@ -1,7 +1,6 @@
 plugins {
     id("com.android.application") version "8.7.3"
     kotlin("android") version "2.1.20"
-    kotlin("plugin.compose") version "2.1.20"
 }
 
 android {
@@ -26,27 +25,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-
-    buildFeatures {
-        compose = true
-    }
 }
 
 kotlin {
     jvmToolchain(17)
 }
 
-dependencies {
-    implementation(project(":game-core"))
-
-    val composeBom = platform("androidx.compose:compose-bom:2024.12.01")
-    implementation(composeBom)
-    androidTestImplementation(composeBom)
-
-    implementation("androidx.activity:activity-compose:1.9.3")
-    implementation("androidx.core:core-ktx:1.15.0")
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    debugImplementation("androidx.compose.ui:ui-tooling")
-}
+// WebView 는 Android core 에 포함 — 별도 의존성 없음.
+dependencies {}

@@ -23,5 +23,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Elements_Puyo"
-include(":game-core")
 include(":app")
