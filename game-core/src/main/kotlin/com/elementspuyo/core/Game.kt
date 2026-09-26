@@ -77,6 +77,36 @@ class Game(
         )
     }
 
+    // ────────────────────────────────────────────────────────────────
+    // 스텝-단위 API — UI 애니메이션이 각 단계 사이에 딜레이를 줄 수 있도록.
+    // playTurn 이 이것들의 원자적 조합.
+    // ────────────────────────────────────────────────────────────────
+
+    /** 현재 조각만 낙하. 착지 Pos 반환, 열이 꽉 찼으면 null (isGameOver true). */
+    fun dropPiece(column: Int): Pos? {
+        require(column in 0 until field.width) { "column out of range: $column" }
+        if (isGameOver) return null
+        val y = field.drop(column, current.element)
+        if (y < 0) { isGameOver = true; return null }
+        return Pos(column, y)
+    }
+
+    /** current ← next, next ← generator.next(). 스폰 열이 꽉 찼으면 게임 오버 판정. */
+    fun advancePiece() {
+        current = next
+        next = generator.next()
+        val spawnCol = field.width / 2
+        if (spawnCol in 0 until field.width && field.isColumnFull(spawnCol)) isGameOver = true
+    }
+
+    /** 스텝별 점수 누적. delta 반환. */
+    fun accrueStepScore(chainIndex: Int, cleared: Int, firedCount: Int): Int {
+        val simul = firedCount.coerceAtLeast(1)
+        val delta = cleared * (chainIndex + 1) * simul * 10
+        totalScore += delta
+        return delta
+    }
+
     /**
      * 점수식: 소거 셀 × 연쇄단계(1-based) × (동시 발동 규칙 수) × 10.
      * (웹 game.js baseScore 공식 이식)
