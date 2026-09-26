@@ -107,6 +107,7 @@ fun GameScreen() {
     val particleT = remember { Animatable(0f) }
     var busy by remember { mutableStateOf(false) }
     var showRules by remember { mutableStateOf(false) }
+    var soundOn by remember { mutableStateOf(Sfx.isEnabled()) }
     var pendingDrop by remember { mutableStateOf<Int?>(null) }
 
     fun tryDrop(col: Int) {
@@ -135,6 +136,7 @@ fun GameScreen() {
         fallY.animateTo(landed.y.toFloat(), tween(duration, easing = LinearOutSlowInEasing))
         falling = null
         snap = game.snap()
+        Sfx.playLand()
 
         // 2) 연쇄 루프 — 각 단계에서 highlight → clear → gravity 순
         var chainIdx = 0
@@ -144,6 +146,17 @@ fun GameScreen() {
             val res = Matcher(game.field).findAll()
             if (res.isEmpty) break
             chainIdx++
+
+            // 사운드 — 우선순위 metal > diatomic > group > period > molecule
+            val primary = when {
+                res.metalCells.isNotEmpty() -> "metal"
+                res.diatomicCells.isNotEmpty() -> "diatomic"
+                res.groupCells.isNotEmpty() -> "group"
+                res.periodCells.isNotEmpty() -> "period"
+                else -> "molecule"
+            }
+            Sfx.playClear(primary)
+            if (chainIdx >= 2) Sfx.playChain(chainIdx)
 
             // Highlight 단계 (셀 flash + 팝업 + 파티클 준비)
             flashing = res.allCleared
@@ -227,6 +240,8 @@ fun GameScreen() {
                 score = snap.totalScore,
                 current = snap.current,
                 next = snap.next,
+                soundOn = soundOn,
+                onToggleSound = { soundOn = Sfx.toggle() },
                 onHelp = { showRules = true },
             )
             Spacer(Modifier.height(10.dp))
@@ -280,7 +295,14 @@ private fun popupOf(sub: Subset, height: Int): PopupInfo {
 }
 
 @Composable
-private fun TopHud(score: Int, current: Element, next: Element, onHelp: () -> Unit) {
+private fun TopHud(
+    score: Int,
+    current: Element,
+    next: Element,
+    soundOn: Boolean,
+    onToggleSound: () -> Unit,
+    onHelp: () -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -295,17 +317,29 @@ private fun TopHud(score: Int, current: Element, next: Element, onHelp: () -> Un
             Spacer(Modifier.width(12.dp))
             LabeledMiniBall("NEXT", next)
             Spacer(Modifier.width(12.dp))
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(Color(0x33FFFFFF))
-                    .clickable { onHelp() },
-                contentAlignment = Alignment.Center,
-            ) {
-                Text("?", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            }
+            IconButtonRound(if (soundOn) "♪" else "♪", onClick = onToggleSound, dim = !soundOn)
+            Spacer(Modifier.width(6.dp))
+            IconButtonRound("?", onClick = onHelp)
         }
+    }
+}
+
+@Composable
+private fun IconButtonRound(label: String, onClick: () -> Unit, dim: Boolean = false) {
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clip(CircleShape)
+            .background(if (dim) Color(0x11FFFFFF) else Color(0x33FFFFFF))
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            label,
+            color = if (dim) Color(0x66FFFFFF) else Color.White,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+        )
     }
 }
 
