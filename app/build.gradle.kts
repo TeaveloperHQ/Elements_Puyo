@@ -7,6 +7,10 @@ android {
     namespace = "com.elementspuyo.app"
     compileSdk = 35
 
+    // 웹 앱을 단일 소스로 유지 — assets 는 프로젝트 루트의 web/ 를 그대로 사용.
+    // web/ 만 편집하면 됨. 별도 복사 단계 없음.
+    sourceSets["main"].assets.srcDirs("../web")
+
     defaultConfig {
         applicationId = "com.elementspuyo.app"
         minSdk = 26
