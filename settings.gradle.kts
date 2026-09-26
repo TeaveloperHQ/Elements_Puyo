@@ -24,4 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Elements_Puyo"
 include(":game-core")
-// Android app module (:app) 은 Android Studio 마법사로 나중에 추가.
+include(":app")
