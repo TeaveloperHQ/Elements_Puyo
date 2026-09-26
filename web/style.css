@@ -1436,3 +1436,31 @@ body.solo-mode .player-side {
 }
 /* 스테이지 버튼도 duel 모드용이라 solo 에서는 숨김 */
 body.solo-mode #stage-btn { display: none; }
+
+/* ══════════════════════════════════════════════════════════════
+   대전 아바타 / HP 바 — duel.js·avatars.js 연동
+   서버 대전 UI 준비. 아직 게임 화면에 연결은 안 되어 있음.
+   ══════════════════════════════════════════════════════════════ */
+.avatar-card { display: flex; align-items: center; gap: 10px;
+  padding: 6px 10px; background: rgba(20,20,32,0.55);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; }
+.avatar-card.attacker { border-color: rgba(231,76,60,0.35); }
+.avatar-card.defender { border-color: rgba(52,152,219,0.35); }
+.avatar-emblem { display: block; border-radius: 50%; overflow: hidden;
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.5); }
+.avatar-emblem svg { width: 100%; height: 100%; }
+.avatar-meta { display: flex; flex-direction: column; }
+.avatar-name { font-size: 13px; font-weight: 700; }
+.avatar-role { font-size: 10px; color: #9aa5b8; }
+
+.hpbar { position: relative; height: 10px; border-radius: 5px;
+  background: rgba(255,255,255,0.08); overflow: hidden; }
+.hpbar > .fill { height: 100%; transition: width 300ms ease-out; }
+.hpbar.attacker > .fill { background: linear-gradient(90deg,#7a1e12,#e74c3c); }
+.hpbar.defender > .fill { background: linear-gradient(90deg,#0e3a63,#3498db); }
+.hpbar > .shield { position: absolute; top: 0; right: 0; height: 100%;
+  background: repeating-linear-gradient(45deg, rgba(255,235,180,0.55) 0 4px, transparent 4px 8px);
+  transition: width 300ms ease-out; }
+.hpbar > .hp-text { position: absolute; inset: 0; text-align: center;
+  color: #fff; font-size: 10px; font-weight: 700; line-height: 10px;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.7); }
