@@ -19,6 +19,7 @@ const ELEMENTS = {
   BE: { z: 4,  symbol: "Be", nameKr: "베릴륨",   period: 2, group: 2,  charge: +2, category: CATEGORY.METAL    },
   B:  { z: 5,  symbol: "B",  nameKr: "붕소",     period: 2, group: 13, charge: +3, category: CATEGORY.METALLOID},
   C:  { z: 6,  symbol: "C",  nameKr: "탄소",     period: 2, group: 14, charge: -4, category: CATEGORY.NONMETAL },
+  CP: { z: 6,  symbol: "C",  nameKr: "탄소(양)", period: 2, group: 14, charge: +4, category: CATEGORY.NONMETAL },
   N:  { z: 7,  symbol: "N",  nameKr: "질소",     period: 2, group: 15, charge: -3, category: CATEGORY.NONMETAL },
   O:  { z: 8,  symbol: "O",  nameKr: "산소",     period: 2, group: 16, charge: -2, category: CATEGORY.NONMETAL },
   F:  { z: 9,  symbol: "F",  nameKr: "플루오린", period: 2, group: 17, charge: -1, category: CATEGORY.NONMETAL },
@@ -27,15 +28,56 @@ const ELEMENTS = {
   MG: { z: 12, symbol: "Mg", nameKr: "마그네슘", period: 3, group: 2,  charge: +2, category: CATEGORY.METAL    },
   AL: { z: 13, symbol: "Al", nameKr: "알루미늄", period: 3, group: 13, charge: +3, category: CATEGORY.METAL    },
   SI: { z: 14, symbol: "Si", nameKr: "규소",     period: 3, group: 14, charge: +4, category: CATEGORY.METALLOID},
+  SIM:{ z: 14, symbol: "Si", nameKr: "규소(음)", period: 3, group: 14, charge: -4, category: CATEGORY.METALLOID},
   P:  { z: 15, symbol: "P",  nameKr: "인",       period: 3, group: 15, charge: -3, category: CATEGORY.NONMETAL },
   S:  { z: 16, symbol: "S",  nameKr: "황",       period: 3, group: 16, charge: -2, category: CATEGORY.NONMETAL },
   CL: { z: 17, symbol: "Cl", nameKr: "염소",     period: 3, group: 17, charge: -1, category: CATEGORY.NONMETAL },
   AR: { z: 18, symbol: "Ar", nameKr: "아르곤",   period: 3, group: 18, charge:  0, category: CATEGORY.NOBLE    },
+  // 4주기 — 전이금속은 흔한 산화수마다 별도 변종 (C/Si 방식). 전하 합만 맞으면 어떤 조합이든 화합물 형성.
+  K:  { z: 19, symbol: "K",  nameKr: "칼륨",             period: 4, group: 1,  charge: +1, category: CATEGORY.METAL     },
+  CA: { z: 20, symbol: "Ca", nameKr: "칼슘",             period: 4, group: 2,  charge: +2, category: CATEGORY.METAL     },
+  SC: { z: 21, symbol: "Sc", nameKr: "스칸듐",           period: 4, group: 3,  charge: +3, category: CATEGORY.METAL     },
+  TI2:{ z: 22, symbol: "Ti", nameKr: "타이타늄(II)",     period: 4, group: 4,  charge: +2, category: CATEGORY.METAL     },
+  TI4:{ z: 22, symbol: "Ti", nameKr: "타이타늄(IV)",     period: 4, group: 4,  charge: +4, category: CATEGORY.METAL     },
+  V3: { z: 23, symbol: "V",  nameKr: "바나듐(III)",      period: 4, group: 5,  charge: +3, category: CATEGORY.METAL     },
+  V5: { z: 23, symbol: "V",  nameKr: "바나듐(V)",        period: 4, group: 5,  charge: +5, category: CATEGORY.METAL     },
+  CR3:{ z: 24, symbol: "Cr", nameKr: "크로뮴(III)",      period: 4, group: 6,  charge: +3, category: CATEGORY.METAL     },
+  CR6:{ z: 24, symbol: "Cr", nameKr: "크로뮴(VI)",       period: 4, group: 6,  charge: +6, category: CATEGORY.METAL     },
+  MN2:{ z: 25, symbol: "Mn", nameKr: "망가니즈(II)",     period: 4, group: 7,  charge: +2, category: CATEGORY.METAL     },
+  MN4:{ z: 25, symbol: "Mn", nameKr: "망가니즈(IV)",     period: 4, group: 7,  charge: +4, category: CATEGORY.METAL     },
+  FE2:{ z: 26, symbol: "Fe", nameKr: "철(II)",           period: 4, group: 8,  charge: +2, category: CATEGORY.METAL     },
+  FE3:{ z: 26, symbol: "Fe", nameKr: "철(III)",          period: 4, group: 8,  charge: +3, category: CATEGORY.METAL     },
+  CO2:{ z: 27, symbol: "Co", nameKr: "코발트(II)",       period: 4, group: 9,  charge: +2, category: CATEGORY.METAL     },
+  CO3:{ z: 27, symbol: "Co", nameKr: "코발트(III)",      period: 4, group: 9,  charge: +3, category: CATEGORY.METAL     },
+  NI: { z: 28, symbol: "Ni", nameKr: "니켈",             period: 4, group: 10, charge: +2, category: CATEGORY.METAL     },
+  CU1:{ z: 29, symbol: "Cu", nameKr: "구리(I)",          period: 4, group: 11, charge: +1, category: CATEGORY.METAL     },
+  CU2:{ z: 29, symbol: "Cu", nameKr: "구리(II)",         period: 4, group: 11, charge: +2, category: CATEGORY.METAL     },
+  ZN: { z: 30, symbol: "Zn", nameKr: "아연",             period: 4, group: 12, charge: +2, category: CATEGORY.METAL     },
+  GA: { z: 31, symbol: "Ga", nameKr: "갈륨",             period: 4, group: 13, charge: +3, category: CATEGORY.METAL     },
+  GE: { z: 32, symbol: "Ge", nameKr: "저마늄",           period: 4, group: 14, charge: +4, category: CATEGORY.METALLOID },
+  GEM:{ z: 32, symbol: "Ge", nameKr: "저마늄(음)",       period: 4, group: 14, charge: -4, category: CATEGORY.METALLOID },
+  AS: { z: 33, symbol: "As", nameKr: "비소",             period: 4, group: 15, charge: -3, category: CATEGORY.METALLOID },
+  ASP:{ z: 33, symbol: "As", nameKr: "비소(III)",        period: 4, group: 15, charge: +3, category: CATEGORY.METALLOID },
+  SE: { z: 34, symbol: "Se", nameKr: "셀레늄",           period: 4, group: 16, charge: -2, category: CATEGORY.NONMETAL  },
+  SEP:{ z: 34, symbol: "Se", nameKr: "셀레늄(VI)",       period: 4, group: 16, charge: +6, category: CATEGORY.NONMETAL  },
+  BR: { z: 35, symbol: "Br", nameKr: "브로민",           period: 4, group: 17, charge: -1, category: CATEGORY.NONMETAL  },
+  KR: { z: 36, symbol: "Kr", nameKr: "크립톤",           period: 4, group: 18, charge:  0, category: CATEGORY.NOBLE     },
   // 방해석 — 게임 규칙에 참여하지 않는 순수 장애물 (연쇄 공격으로 상대에게 보냄)
   AU: { z: 79, symbol: "Au", nameKr: "금",       period: 0, group: 0,  charge:  0, category: CATEGORY.OBSTACLE },
   AG: { z: 47, symbol: "Ag", nameKr: "은",       period: 0, group: 0,  charge:  0, category: CATEGORY.OBSTACLE },
 };
 for (const k in ELEMENTS) ELEMENTS[k].key = k;
+
+// 원자량 (u) — 분자량 기반 우선순위 계산용. z 로 조회.
+const ATOMIC_MASS = {
+  1:1.008, 2:4.0, 3:6.94, 4:9.01, 5:10.81, 6:12.01, 7:14.01, 8:16.0, 9:19.0, 10:20.18,
+  11:22.99, 12:24.31, 13:26.98, 14:28.09, 15:30.97, 16:32.07, 17:35.45, 18:39.95,
+  19:39.10, 20:40.08, 21:44.96, 22:47.87, 23:50.94, 24:52.00, 25:54.94, 26:55.85,
+  27:58.93, 28:58.69, 29:63.55, 30:65.38, 31:69.72, 32:72.63, 33:74.92, 34:78.96,
+  35:79.90, 36:83.80,
+  47:107.87, 79:196.97,
+};
+for (const k in ELEMENTS) ELEMENTS[k].mass = ATOMIC_MASS[ELEMENTS[k].z] || 0;
 
 // 게임에 자연 낙하하는 원소 (장애물 제외)
 const ALL_ELEMENTS = Object.values(ELEMENTS).filter(e => e.category !== CATEGORY.OBSTACLE);
@@ -343,19 +385,23 @@ class Game {
     while (true) {
       const f = this._fieldOfElements();
       const molResult = findMolecules(f, WIDTH, HEIGHT, isNoble, isObstacle);
-      const mol = molResult.cells;
-      const per = findPeriodRuns(f, WIDTH, HEIGHT, isObstacle);
-      const grp = findGroupRuns(f, WIDTH, HEIGHT, isObstacle);
-      const met = findMetalClusters(f, WIDTH, HEIGHT, CATEGORY.METAL);
-      const dia = findDiatomics(f, WIDTH, HEIGHT, mol);
-      const all = new Set([...mol, ...per, ...grp, ...met, ...dia]);
+      const mol = molResult.cells;           // 분자(화합물 + 이원자) 통합
+      const compoundCells = molResult.compoundCells;
+      const diatomicCells = molResult.diatomicCells;
+      // 분자가 최우선 — 분자 셀은 주기/족/금속 규칙에서 제외 (서로는 공유 OK)
+      const per = findPeriodRuns(f, WIDTH, HEIGHT, isObstacle, mol);
+      const grp = findGroupRuns(f, WIDTH, HEIGHT, isObstacle, mol);
+      const met = findMetalClusters(f, WIDTH, HEIGHT, CATEGORY.METAL, mol);
+      const all = new Set([...mol, ...per, ...grp, ...met]);
       if (all.size === 0) break;
       chain++;
       const positions = decodePositions(all, HEIGHT);
 
+      const compoundSubs = molResult.subsets.filter(s => !s.isDiatomic);
+      const diatomicSubs = molResult.subsets.filter(s => s.isDiatomic);
       const fired = [];
-      if (mol.size > 0) fired.push({ cls: "molecule", label: "분자", formulas: molResult.subsets });
-      if (dia.size > 0) fired.push({ cls: "diatomic", label: "이원자", formulas: diatomicFormulas(dia, f, WIDTH, HEIGHT) });
+      if (compoundSubs.length > 0) fired.push({ cls: "molecule", label: "분자", formulas: compoundSubs });
+      if (diatomicSubs.length > 0) fired.push({ cls: "diatomic", label: "이원자", formulas: diatomicSubs });
       if (per.size > 0) fired.push({ cls: "period", label: "주기 가로" });
       if (grp.size > 0) fired.push({ cls: "group",  label: "족 세로"  });
       if (met.size > 0) fired.push({ cls: "metal",  label: "금속 결합" });
@@ -365,7 +411,7 @@ class Game {
 
       if (this.opts.isPlayer && typeof audio !== "undefined") {
         const primary = met.size > 0 ? "metal"
-                      : dia.size > 0 ? "diatomic"
+                      : diatomicCells.size > 0 ? "diatomic"
                       : grp.size > 0 ? "group"
                       : per.size > 0 ? "period"
                       : "molecule";
@@ -374,20 +420,20 @@ class Game {
       }
       if (this.opts.isPlayer) { stats.recordChain(chain, simul); stats.save(); stats.render(); }
 
-      // 규칙별 하이라이트
+      // 규칙별 하이라이트 — 분자(화합물/이원자) 는 mol 에 이미 배타적이므로 셀 겹침 없음
       for (const p of positions) {
         const bid = this.field[p.x][p.y];
         if (bid === null) continue;
         const b = this.balls.get(bid);
         if (!b) continue;
         const enc = p.x * HEIGHT + p.y;
-        if (met.has(enc))      b.dom.classList.add("match-metal");
-        else if (dia.has(enc)) b.dom.classList.add("match-diatomic");
-        else if (grp.has(enc)) b.dom.classList.add("match-group");
-        else if (per.has(enc)) b.dom.classList.add("match-period");
-        else if (mol.has(enc)) b.dom.classList.add("match-molecule");
+        if (compoundCells.has(enc))      b.dom.classList.add("match-molecule");
+        else if (diatomicCells.has(enc)) b.dom.classList.add("match-diatomic");
+        else if (met.has(enc))           b.dom.classList.add("match-metal");
+        else if (grp.has(enc))           b.dom.classList.add("match-group");
+        else if (per.has(enc))           b.dom.classList.add("match-period");
       }
-      this._spawnMatchLabels(f, molResult.subsets, per, grp, met, dia);
+      this._spawnMatchLabels(f, compoundSubs, diatomicSubs, per, grp, met);
       await sleep(280);
 
       for (const p of positions) {
@@ -440,7 +486,7 @@ class Game {
 
       // 공격 라우팅 (duel 전용): 순수 period/group 만 (규칙 2·3) 은 공격 없음.
       // molecule/metal/diatomic 발동 또는 chain ≥ 2 일 때만 상대에게 Au/Ag 발사.
-      const attackable = mol.size > 0 || met.size > 0 || dia.size > 0 || chain >= 2;
+      const attackable = mol.size > 0 || met.size > 0 || chain >= 2;
       if (attackable && this.opts.onAttack) {
         const attackAmt = Math.floor(gained / 30);
         if (attackAmt > 0) this.opts.onAttack(attackAmt, this);
@@ -621,7 +667,7 @@ class Game {
   }
 
   // 소거 순간, 각 규칙 클러스터 중심에 이름 팝업 (분자식·N주기·N족·이원자·금속 결합)
-  _spawnMatchLabels(f, molSubsets, per, grp, met, dia) {
+  _spawnMatchLabels(f, molSubsets, diatomicSubs, per, grp, met) {
     if (!this.playfieldEl || !this.fieldEl) return;
     const centroidPx = (cells) => {
       let sx = 0, sy = 0;
@@ -659,24 +705,14 @@ class Game {
                    (sub.nameKr ? `<span class="mp-name">${sub.nameKr}</span>` : "");
       this._spawnLabelPopup(c.x, c.y, html, "molecule");
     }
-    // 이원자: 같은 원소 key 별로 묶기
-    if (dia && dia.size > 0) {
-      const groups = new Map();  // key -> [cells]
-      for (const enc of dia) {
-        const x = Math.floor(enc / HEIGHT), y = enc % HEIGHT;
-        const e = f[x][y]; if (!e) continue;
-        if (!groups.has(e.key)) groups.set(e.key, []);
-        groups.get(e.key).push({ x, y, e });
-      }
-      for (const cells of groups.values()) {
-        const c = centroidPx(cells);
-        const sym = cells[0].e.symbol;
-        const nameMap = { H: "수소 기체", N: "질소 기체", O: "산소 기체", F: "플루오린 기체", CL: "염소 기체" };
-        const nameKr = nameMap[cells[0].e.key] || "";
-        const html = `<span class="mp-formula">${sym}<sub>2</sub></span>` +
-                     (nameKr ? `<span class="mp-name">${nameKr}</span>` : "");
-        this._spawnLabelPopup(c.x, c.y, html, "diatomic");
-      }
+    // 이원자: findMolecules 가 이미 서브셋 단위로 반환 — subset 중심에 팝업
+    for (const sub of diatomicSubs) {
+      const cells = [];
+      for (const cid of sub.cellIds) cells.push({ x: Math.floor(cid / HEIGHT), y: cid % HEIGHT });
+      const c = centroidPx(cells);
+      const html = `<span class="mp-formula">${sub.formula}</span>` +
+                   (sub.nameKr ? `<span class="mp-name">${sub.nameKr}</span>` : "");
+      this._spawnLabelPopup(c.x, c.y, html, "diatomic");
     }
     // 주기: 행별로 묶기 (같은 주기가 연속되는 구간)
     if (per && per.size > 0) {
