@@ -79,6 +79,22 @@ const ATOMIC_MASS = {
 };
 for (const k in ELEMENTS) ELEMENTS[k].mass = ATOMIC_MASS[ELEMENTS[k].z] || 0;
 
+// 낙하 큐 가중치 — z(원자) 기준 등확률 + 4주기는 3주기 총합에 맞춰 다운스케일.
+// 그래서 이온 변종(FE2/FE3, C/CP 등)은 같은 z 슬롯을 나눠 가짐: 한 원소로 등장 확률은 다른 원소와 같음.
+const _P4_SCALE = 8 / 18;   // period4 z 수(18) 를 period3 z 수(8) 로 맞춤 → 총합 비율 8:8
+{
+  const zVariantCount = {};
+  for (const k in ELEMENTS) {
+    const z = ELEMENTS[k].z;
+    zVariantCount[z] = (zVariantCount[z] || 0) + 1;
+  }
+  for (const k in ELEMENTS) {
+    const e = ELEMENTS[k];
+    const scale = e.period === 4 ? _P4_SCALE : 1;
+    e.weight = scale / zVariantCount[e.z];
+  }
+}
+
 // 게임에 자연 낙하하는 원소 (장애물 제외)
 const ALL_ELEMENTS = Object.values(ELEMENTS).filter(e => e.category !== CATEGORY.OBSTACLE);
 const OBSTACLE_ELEMENTS = [ELEMENTS.AU, ELEMENTS.AG];
@@ -158,11 +174,22 @@ function chemistPortraitHtml(rankIndex, size = 40) {
 }
 function rankInfo(level)  { return ALCHEMIST_RANKS[Math.min(level - 1, ALCHEMIST_RANKS.length - 1)]; }
 function pickRandom(arr)  { return arr[Math.floor(Math.random() * arr.length)]; }
+function pickWeighted(arr) {
+  let total = 0;
+  for (const e of arr) total += (e.weight || 1);
+  let r = Math.random() * total;
+  for (const e of arr) {
+    const w = e.weight || 1;
+    if (r < w) return e;
+    r -= w;
+  }
+  return arr[arr.length - 1];
+}
 function fallSpeedForLevel(lv) { return Math.min(FALL_SPEED_MAX, FALL_SPEED_BASE + (lv - 1) * FALL_SPEED_PER_LEVEL); }
 function periodColor(period) { return period === 1 ? "#ffcf3d" : period === 2 ? "#7ed88a" : "#6fbcf5"; }
 
 // 원소 하나 뽑기 (장애물 제외)
-function generatePiece() { return { element: pickRandom(ALL_ELEMENTS) }; }
+function generatePiece() { return { element: pickWeighted(ALL_ELEMENTS) }; }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
